@@ -1,4 +1,4 @@
-import { supabase, Video, UserProfile, Subscription, Usage } from '../config/supabase';
+import { supabase, Video, UserProfile, Subscription, Usage, UserChannel, UserOnboarding, ScheduledVideo, VideoQueue } from '../config/supabase';
 
 export class DatabaseService {
   // Video operations
@@ -276,5 +276,268 @@ export class DatabaseService {
         callback
       )
       .subscribe();
+  }
+
+  // User Channel operations
+  static async createUserChannel(userId: string, channelData: Omit<UserChannel, 'id' | 'user_id' | 'created_at' | 'updated_at'>) {
+    try {
+      const { data, error } = await supabase
+        .from('user_channels')
+        .insert({ ...channelData, user_id: userId })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error creating user channel:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  static async getUserChannels(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('user_channels')
+        .select('*')
+        .eq('user_id', userId)
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error fetching user channels:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  static async getPrimaryUserChannel(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('user_channels')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_primary', true)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error fetching primary user channel:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  static async updateUserChannel(channelId: string, updates: Partial<UserChannel>) {
+    try {
+      const { data, error } = await supabase
+        .from('user_channels')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', channelId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error updating user channel:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  static async deleteUserChannel(channelId: string) {
+    try {
+      const { error } = await supabase
+        .from('user_channels')
+        .delete()
+        .eq('id', channelId);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting user channel:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  // User Onboarding operations
+  static async getUserOnboardingStatus(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('user_onboarding')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error fetching user onboarding status:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  static async updateOnboardingStatus(userId: string, updates: Partial<UserOnboarding>) {
+    try {
+      const { data, error } = await supabase
+        .from('user_onboarding')
+        .upsert({ 
+          user_id: userId, 
+          ...updates, 
+          updated_at: new Date().toISOString() 
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error updating onboarding status:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  // Scheduled Video operations
+  static async createScheduledVideo(userId: string, scheduledVideoData: Omit<ScheduledVideo, 'id' | 'user_id' | 'created_at' | 'updated_at'>) {
+    try {
+      const { data, error } = await supabase
+        .from('scheduled_videos')
+        .insert({ ...scheduledVideoData, user_id: userId })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error creating scheduled video:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  static async getUserScheduledVideos(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('scheduled_videos')
+        .select(`
+          *,
+          user_channels!inner(
+            channel_name,
+            channel_type
+          )
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error fetching user scheduled videos:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  static async updateScheduledVideo(scheduledVideoId: string, updates: Partial<ScheduledVideo>) {
+    try {
+      const { data, error } = await supabase
+        .from('scheduled_videos')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', scheduledVideoId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error updating scheduled video:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  static async deleteScheduledVideo(scheduledVideoId: string) {
+    try {
+      const { error } = await supabase
+        .from('scheduled_videos')
+        .delete()
+        .eq('id', scheduledVideoId);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting scheduled video:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  // Video Queue operations
+  static async addToVideoQueue(userId: string, queueData: Omit<VideoQueue, 'id' | 'user_id' | 'created_at' | 'updated_at'>) {
+    try {
+      const { data, error } = await supabase
+        .from('video_queue')
+        .insert({ ...queueData, user_id: userId })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error adding to video queue:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  static async getVideoQueue(userId: string, status?: string) {
+    try {
+      let query = supabase
+        .from('video_queue')
+        .select('*')
+        .eq('user_id', userId)
+        .order('priority', { ascending: false })
+        .order('created_at', { ascending: true });
+
+      if (status) {
+        query = query.eq('status', status);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error fetching video queue:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  static async updateVideoQueueItem(queueId: string, updates: Partial<VideoQueue>) {
+    try {
+      const { data, error } = await supabase
+        .from('video_queue')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', queueId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error updating video queue item:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  static async deleteVideoQueueItem(queueId: string) {
+    try {
+      const { error } = await supabase
+        .from('video_queue')
+        .delete()
+        .eq('id', queueId);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting video queue item:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   }
 }

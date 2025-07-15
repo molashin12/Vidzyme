@@ -86,6 +86,66 @@ export interface Usage {
   created_at: string;
 }
 
+export interface UserChannel {
+  id: string;
+  user_id: string;
+  channel_name: string;
+  channel_description: string;
+  channel_type: 'youtube' | 'instagram' | 'tiktok' | 'linkedin' | 'other';
+  channel_url?: string;
+  target_audience: string;
+  content_style: string;
+  posting_frequency: string;
+  preferred_video_length: number;
+  preferred_voice: string;
+  is_primary: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserOnboarding {
+  id: string;
+  user_id: string;
+  step_completed: number;
+  completed_at?: string;
+  skipped: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScheduledVideo {
+  id: string;
+  user_id: string;
+  channel_id: string;
+  title_template: string;
+  prompt_template: string;
+  schedule_type: 'daily' | 'weekly' | 'monthly';
+  schedule_time: string;
+  next_execution: string;
+  is_active: boolean;
+  last_generated?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VideoQueue {
+  id: string;
+  user_id: string;
+  scheduled_video_id?: string;
+  title: string;
+  prompt: string;
+  voice: string;
+  duration: number;
+  priority: number;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  scheduled_for?: string;
+  started_at?: string;
+  completed_at?: string;
+  error_message?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Database Tables
 export type Database = {
   public: {
@@ -114,6 +174,26 @@ export type Database = {
         Row: Usage;
         Insert: Omit<Usage, 'id' | 'created_at'>;
         Update: Partial<Omit<Usage, 'id' | 'created_at'>>;
+      };
+      user_channels: {
+        Row: UserChannel;
+        Insert: Omit<UserChannel, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<UserChannel, 'id' | 'created_at'>>;
+      };
+      user_onboarding: {
+        Row: UserOnboarding;
+        Insert: Omit<UserOnboarding, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<UserOnboarding, 'id' | 'created_at'>>;
+      };
+      scheduled_videos: {
+        Row: ScheduledVideo;
+        Insert: Omit<ScheduledVideo, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<ScheduledVideo, 'id' | 'created_at'>>;
+      };
+      video_queue: {
+        Row: VideoQueue;
+        Insert: Omit<VideoQueue, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<VideoQueue, 'id' | 'created_at'>>;
       };
     };
   };

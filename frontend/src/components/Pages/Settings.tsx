@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { User, Bell, Shield, CreditCard, Link, Trash2, Save, Youtube, Instagram, Twitter, Linkedin } from 'lucide-react';
+import { User, Bell, Shield, CreditCard, Link, Trash2, Save, Youtube, Instagram, Twitter, Linkedin, Calendar, Settings as SettingsIcon } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
+import ScheduledVideosManager from '../ScheduledVideos/ScheduledVideosManager';
 import type { NotificationSettings } from '../../contexts/UserContext';
 
 interface SettingsProps {
@@ -33,6 +34,8 @@ export default function Settings({ onNavigate }: SettingsProps) {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'channels', label: 'Channels', icon: SettingsIcon },
+    { id: 'scheduled', label: 'Scheduled Videos', icon: Calendar },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'connected', label: 'Connected Accounts', icon: Link },
     { id: 'billing', label: 'Billing', icon: CreditCard },
@@ -150,6 +153,78 @@ export default function Settings({ onNavigate }: SettingsProps) {
                         />
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Channels Tab */}
+              {activeTab === 'channels' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4">Channel Management</h2>
+                    <p className="text-gray-400 mb-6">Manage your content channels and their settings</p>
+                    
+                    {/* Channel editing form will be implemented here */}
+                    <div className="bg-gray-700/50 rounded-lg p-6">
+                      <h3 className="font-medium mb-4">Channel Information</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Channel Name</label>
+                          <input
+                            type="text"
+                            placeholder="Enter your channel name"
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#27AE60]"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Content Description</label>
+                          <textarea
+                            placeholder="Describe the type of content you create..."
+                            rows={4}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#27AE60]"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Content Category</label>
+                          <select className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#27AE60]">
+                            <option value="">Select a category</option>
+                            <option value="education">Education</option>
+                            <option value="entertainment">Entertainment</option>
+                            <option value="technology">Technology</option>
+                            <option value="lifestyle">Lifestyle</option>
+                            <option value="business">Business</option>
+                            <option value="gaming">Gaming</option>
+                            <option value="music">Music</option>
+                            <option value="sports">Sports</option>
+                            <option value="news">News</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Target Audience</label>
+                          <input
+                            type="text"
+                            placeholder="e.g., Young professionals, Students, Tech enthusiasts"
+                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#27AE60]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Scheduled Videos Tab */}
+              {activeTab === 'scheduled' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4">Scheduled Video Generation</h2>
+                    <p className="text-gray-400 mb-6">Set up automatic video generation schedules for your channels</p>
+                    
+                    <ScheduledVideosManager />
                   </div>
                 </div>
               )}
@@ -431,16 +506,18 @@ export default function Settings({ onNavigate }: SettingsProps) {
                 </div>
               )}
 
-              {/* Save Button */}
-              <div className="flex justify-end pt-6 border-t border-gray-700">
-                <button
-                  onClick={handleSave}
-                  className="bg-[#27AE60] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#229954] transition-colors flex items-center space-x-2"
-                >
-                  <Save className="w-5 h-5" />
-                  <span>Save Changes</span>
-                </button>
-              </div>
+              {/* Save Button - Only show for certain tabs */}
+              {['profile', 'notifications', 'connected', 'channels'].includes(activeTab) && (
+                <div className="flex justify-end pt-6 border-t border-gray-700">
+                  <button
+                    onClick={handleSave}
+                    className="bg-[#27AE60] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#229954] transition-colors flex items-center space-x-2"
+                  >
+                    <Save className="w-5 h-5" />
+                    <span>Save Changes</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

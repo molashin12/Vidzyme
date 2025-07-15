@@ -10,15 +10,18 @@ import Subscription from './components/Pages/Subscription';
 import SignIn from './components/Pages/Auth/SignIn';
 import SignUp from './components/Pages/Auth/SignUp';
 import AuthCallback from './components/Pages/Auth/AuthCallback';
+import OnboardingFlow from './components/Onboarding/OnboardingFlow';
 import HealthCheck from './components/HealthCheck';
 import { AuthDebugPanel, useAuthDebug } from './components/AuthDebugPanel';
 import { useAuth } from './hooks/useAuth';
+import { useOnboarding } from './hooks/useOnboarding';
 import { UserProvider } from './contexts/UserContext';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const { user, loading, signIn, signUp, signInWithGoogle, signOut } = useAuth();
   const { isDebugVisible } = useAuthDebug();
+  const { onboardingStatus, loading: onboardingLoading, isOnboardingComplete } = useOnboarding(user?.id);
   const isAuthenticated = !!user;
 
   // Redirect to dashboard if user is authenticated and on auth pages
@@ -56,12 +59,23 @@ function App() {
     setCurrentPage('home');
   };
 
-  // Show loading spinner while checking authentication
-  if (loading) {
+  // Show loading spinner while checking authentication or onboarding
+  if (loading || (isAuthenticated && onboardingLoading)) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500"></div>
       </div>
+    );
+  }
+
+  // Show onboarding flow for authenticated users who haven't completed onboarding
+  if (isAuthenticated && !isOnboardingComplete && currentPage !== 'auth/callback') {
+    return (
+      <UserProvider>
+        <div className="min-h-screen bg-[#0F1116] text-white">
+          <OnboardingFlow onComplete={() => setCurrentPage('dashboard')} />
+        </div>
+      </UserProvider>
     );
   }
 
