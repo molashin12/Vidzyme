@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Content Creation Tool</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+    
+      <div class="social">
+        <a href="#"><img src="/static/youtube_icon.png" class="icon" alt="YouTube"/></a>
+        <a href="#"><img src="/static/instagram_icon.png" class="icon" alt="Instagram"/></a>
+        <a href="#"><img src="/static/twitter_icon.png" class="icon" alt="Twitter"/></a>
+        <a href="#"><img src="/static/facebook_icon.png" class="icon" alt="Facebook"/></a>
+      </div>
+    </header>
+
+    <!-- Title -->
+    <h1 class="main-title"></h1>
+
+    <!-- Form -->
+    <div class="form-wrapper">
+      <img src="/static/make.png" class="label-img" alt="Write video idea"/>
+      <input id="topic" type="text" placeholder="Example: Artificial Intelligence in Education"/>
+
+      <img src="/static/selectvoice.png" class="label-img" alt="Select voice"/>
+      <select id="voice">
+        <option>haitham</option>
+        <option>yahya</option>
+        <option>sara</option>
+        <option>mazen</option>
+        <option>asma</option>
+      </select>
+
+      <button id="generate-btn">Create Video</button>
+    </div>
+
+    <!-- Log box -->
+    <div id="log-box"></div>
+
+    <!-- Footer -->
+    <footer>Developed by Baraa Mohammed – AI School</footer>
+  </div>
+
+  <script>
+    const evtSource = new EventSource('/stream');
+    const logBox = document.getElementById('log-box');
+    evtSource.onmessage = e => {
+      logBox.textContent += e.data + '\n';
+      logBox.scrollTop = logBox.scrollHeight;
+    };
+
+    document.getElementById('generate-btn').addEventListener('click', async () => {
+      logBox.textContent = '';
+      const topic = document.getElementById('topic').value.trim();
+      const voice = document.getElementById('voice').value;
+      if (!topic) return alert('Please enter a video idea');
+      const res = await fetch(`/generate?topic=${encodeURIComponent(topic)}&voice_name=${encodeURIComponent(voice)}`);
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.detail || 'Error');
+      }
+    });
+  </script>
+</body>
+</html>
