@@ -84,7 +84,7 @@ export const useOnboarding = () => {
   const resetOnboarding = async () => {
     return updateOnboardingStatus({
       step_completed: 0,
-      completed_at: null,
+      completed_at: undefined,
       skipped: false
     });
   };

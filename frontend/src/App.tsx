@@ -21,7 +21,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const { user, loading, signIn, signUp, signInWithGoogle, signOut } = useAuth();
   const { isDebugVisible } = useAuthDebug();
-  const { onboardingStatus, loading: onboardingLoading, isOnboardingComplete } = useOnboarding(user?.id);
+  const { onboardingStatus, isLoading: onboardingLoading, isOnboardingComplete } = useOnboarding();
   const isAuthenticated = !!user;
 
   // Redirect to dashboard if user is authenticated and on auth pages
@@ -73,7 +73,10 @@ function App() {
     return (
       <UserProvider>
         <div className="min-h-screen bg-[#0F1116] text-white">
-          <OnboardingFlow onComplete={() => setCurrentPage('dashboard')} />
+          <OnboardingFlow 
+            onComplete={() => setCurrentPage('dashboard')} 
+            onSkip={() => setCurrentPage('dashboard')} 
+          />
         </div>
       </UserProvider>
     );
