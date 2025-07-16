@@ -2,11 +2,26 @@
 
 Vidzyme is a comprehensive AI-powered video generation platform that enables users to create engaging videos automatically with scheduled generation capabilities and seamless channel management.
 
-## Features
+## 🚀 Project Overview
+
+**Vidzyme** is a FastAPI-based pipeline that:
+1. Uses **Google Gemini** (via `gemini_secret.txt`) to write a video script
+2. Splits the script into lines and generates AI images (Pollinations or any other image/video generation API)
+3. Translates prompts via `googletrans` if needed
+4. Generates voice-overs with **ElevenLabs TTS** (`voice_secret.txt`)
+5. Assembles images or videos, audio, and captions into a short video with **MoviePy**, **FFmpeg**, and **ImageMagick**
+6. Streams real-time progress via Server-Sent Events (SSE)
+
+Ideal for automating quick YouTube Shorts, videos or social media clips on any topic.
+
+## 📋 Features
 
 ### 🎥 Video Generation
-- AI-powered video creation with customizable prompts
-- Multiple video formats and styles
+- **Automated Script Writing** with Google Gemini
+- **Image and Video Generation** for each caption segment
+- **High-Quality TTS** from ElevenLabs
+- **Dynamic Video Composition** (MoviePy + FFmpeg + ImageMagick)
+- **Live Progress Updates** through SSE endpoint
 - Real-time video processing status
 - Video history and management
 
@@ -34,12 +49,17 @@ Vidzyme is a comprehensive AI-powered video generation platform that enables use
 - Platform-specific content optimization and formatting
 - Seamless video publishing across selected platforms
 
-
 ### 💳 Subscription Management
 - Multiple subscription tiers (Free, Pro, Enterprise)
 - Usage tracking and credit system
 - Billing management and payment methods
 - Real-time usage analytics
+
+### 🛠️ Modular Codebase
+- Easy customization and extension
+- Clean separation of concerns
+- Well-documented API endpoints
+- Comprehensive error handling
 
 ## Tech Stack
 
@@ -51,6 +71,7 @@ Vidzyme is a comprehensive AI-powered video generation platform that enables use
 - **Custom hooks** for state management
 
 ### Backend
+- **FastAPI** for high-performance API
 - **Supabase** for database and authentication
 - **Row Level Security (RLS)** for data protection
 - **Real-time subscriptions** for live updates
@@ -65,83 +86,33 @@ Vidzyme is a comprehensive AI-powered video generation platform that enables use
 - Subscription and usage tracking
 - User onboarding status
 
-## Getting Started
-
-### Prerequisites
-- Node.js 18+ and npm
-- Supabase account and project
-- Git for version control
-
----
-
-## 🚀 Project Overview
-
-**AI Video Generator** is a FastAPI-based pipeline that:
-1. Uses **Google Gemini** (via `gemini_secret.txt`) to write a video script.
-2. Splits the script into lines and generates AI images (Pollinations).( you can use any other image or video generation api )
-3. Translates prompts via `googletrans` if needed.
-4. Generates voice-overs with **ElevenLabs TTS** (`voice_secret.txt`).
-5. Assembles images or videos, audio, and captions into a short video with **MoviePy**, **FFmpeg**, and **ImageMagick**.
-6. Streams real-time progress via Server-Sent Events (SSE).
-
-Ideal for automating quick YouTube Shorts,videos or social media clips on any topic.
-
----
-
-## 📋 Features
-
-- **Automated Script Writing** with Google Gemini  
-- **Image and video Generation** for each caption segment  
-- **High-Quality TTS** from ElevenLabs  
-- **Dynamic Video Composition** (MoviePy + FFmpeg + ImageMagick)  
-- **Live Progress Updates** through SSE endpoint  
-- **Modular Codebase** for easy customization  
-
----
-
 ## ⚙️ Prerequisites
 
-### 1. System Dependencies
+### System Requirements
+- **Node.js 18+** and npm
+- **Python 3.9+**
+- **Git** for version control
+- **Supabase** account and project
 
-- **FFmpeg**  
-  - **Windows**: Download installer from [ffmpeg.org](https://ffmpeg.org/download.html) → Add `ffmpeg.exe` to your `PATH`.  
-  - **macOS**:  
-    ```bash
-    brew install ffmpeg
-    ```
-  - **Ubuntu/Debian Linux**:  
-    ```bash
-    sudo apt update
-    sudo apt install ffmpeg
-    ```
+### System Dependencies
 
-- **ImageMagick**  
-  - **Windows**: Download from https://imagemagick.org → Add `magick.exe` to your `PATH`.  
-  - **macOS**:  
-    ```bash
-    brew install imagemagick
-    ```
-  - **Ubuntu/Debian Linux**:  
-    ```bash
-    sudo apt update
-    sudo apt install imagemagick
-    ```
+**FFmpeg**
+- **Windows**: Download installer from [ffmpeg.org](https://ffmpeg.org/download.html) → Add `ffmpeg.exe` to your `PATH`
+- **macOS**: `brew install ffmpeg`
+- **Ubuntu/Debian**: `sudo apt update && sudo apt install ffmpeg`
 
-### 2. Python 3.9+
+**ImageMagick**
+- **Windows**: Download from [imagemagick.org](https://imagemagick.org) → Add `magick.exe` to your `PATH`
+- **macOS**: `brew install imagemagick`
+- **Ubuntu/Debian**: `sudo apt update && sudo apt install imagemagick`
 
-Ensure you have **Python 3.9** or newer installed.
+### API Keys
 
-### 3. API Keys
+Create these text files in the project root (ignored by `.gitignore`):
+- `gemini_secret.txt` - Your Google Gemini API key
+- `voice_secret.txt` - Your ElevenLabs API key
 
-Create two text files in the project root (they are ignored by `.gitignore`):
-
-- `gemini_secret.txt`  
-  - Your Google Gemini API key.
-
-- `voice_secret.txt`  
-  - Your ElevenLabs API key.
-
----
+## 🚀 Getting Started
 
 ### Installation
 
@@ -155,17 +126,17 @@ Create two text files in the project root (they are ignored by `.gitignore`):
    ```bash
    cd frontend
    npm install
+   cd ..
    ```
 
 3. **Install backend dependencies**
    ```bash
-
    pip install -r requirements.txt
    ```
 
 4. **Set up environment variables**
    
-   Create `.env` files in both frontend and backend directories:
+   Create `.env` files in both frontend and root directories:
    
    **Frontend (.env)**
    ```env
@@ -174,7 +145,6 @@ Create two text files in the project root (they are ignored by `.gitignore`):
    ```
    
    **Backend (.env in root directory)**
-
    ```env
    SUPABASE_URL=your_supabase_url
    SUPABASE_SERVICE_KEY=your_supabase_service_key
@@ -193,7 +163,6 @@ Create two text files in the project root (they are ignored by `.gitignore`):
    
    # Finally, run the platforms migration for multi-platform support
    cat schema-migration-platforms.sql | supabase db reset
-
    ```
 
 6. **Start the development servers**
@@ -206,25 +175,16 @@ Create two text files in the project root (they are ignored by `.gitignore`):
    
    **Backend**
    ```bash
-
    python server.py
    ```
 
 ### Development
 
 The application will be available at:
-- Frontend: `http://localhost:3000` (or next available port)
-- Backend API: `http://localhost:8000`
+- **Frontend**: `http://localhost:3000` (or next available port)
+- **Backend API**: `http://localhost:8000`
 
----
-
-## ▶️ Running the Server
-
-### Production Mode (Compiled Executable)
-```bash
-# Run the compiled executable
-.\server.exe
-```
+## ▶️ Running the Application
 
 ### Development Mode
 ```bash
@@ -232,23 +192,27 @@ The application will be available at:
 uvicorn server:app --reload --host 127.0.0.1 --port 8000
 ```
 
-* Open your browser to **[http://127.0.0.1:8000](http://127.0.0.1:8000)**.
-* Enter a **topic** and select a **voice**.
-* Watch real-time progress and download your generated video when it completes.
+### Production Mode
+```bash
+# Run the compiled executable (if available)
+.\server.exe
+```
+
+### Usage
+1. Open your browser to **[http://127.0.0.1:8000](http://127.0.0.1:8000)**
+2. Enter a **topic** and select a **voice**
+3. Watch real-time progress and download your generated video when it completes
 
 ### Alternative Implementation (Veo-3)
 The project includes an alternative implementation using Google Veo-3 model:
-* Configure `veo3/REPLICATE_API_TOKEN.txt` with your Replicate API token
-* Use the Veo-3 modules for direct video generation instead of image-based assembly
+- Configure `veo3/REPLICATE_API_TOKEN.txt` with your Replicate API token
+- Use the Veo-3 modules for direct video generation instead of image-based assembly
 
----
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 Vidzyme/
 ├── frontend/                    # React frontend application
-
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── Layout/          # Header, Footer, Navigation
@@ -257,7 +221,6 @@ Vidzyme/
 │   │   │   ├── ScheduledVideos/ # Scheduled video management
 │   │   │   ├── Auth/            # Authentication components
 │   │   │   └── UI/              # Reusable UI components
-
 │   │   ├── hooks/               # Custom React hooks
 │   │   ├── services/            # API and database services
 │   │   ├── contexts/            # React context providers
@@ -282,11 +245,10 @@ Vidzyme/
 ├── schema-extensions.sql       # Extended schema for new features
 ├── schema-migration-platforms.sql # Multi-platform migration
 ├── PLATFORMS_MIGRATION_README.md  # Migration guide
-
 └── README.md
 ```
 
-## Key Features Implementation
+## 🔧 Key Features Implementation
 
 ### Multi-Platform Support
 - Select multiple platforms (YouTube, Instagram, TikTok, LinkedIn, Other) during onboarding
@@ -298,7 +260,6 @@ Vidzyme/
 ### Onboarding Flow
 - Multi-step form for new user setup
 - Channel information collection with multi-platform selection
-
 - Content preferences and categorization
 - Skip option for experienced users
 - Automatic redirect to dashboard upon completion
@@ -313,12 +274,11 @@ Vidzyme/
 ### Channel Management
 - Create and edit multiple channels
 - Multi-platform selection and management
-
 - Content description and categorization
 - Target audience specification
 - Integration with scheduled video generation
 
-## API Endpoints
+## 🔌 API Endpoints
 
 ### Video Management
 - `POST /api/videos` - Create new video
@@ -339,7 +299,7 @@ Vidzyme/
 - `PUT /api/scheduled-videos/:id` - Update schedule
 - `DELETE /api/scheduled-videos/:id` - Delete schedule
 
-## Database Schema
+## 🗄️ Database Schema
 
 ### Core Tables
 - `users` - User authentication and basic info
@@ -348,9 +308,8 @@ Vidzyme/
 - `subscriptions` - User subscription plans
 - `usage` - Usage tracking and analytics
 
-### New Feature Tables
+### Feature Tables
 - `user_channels` - Channel management with multi-platform support
-
 - `scheduled_videos` - Automated video schedules
 - `video_queue` - Video processing queue
 - `user_onboarding` - Onboarding progress tracking
@@ -361,10 +320,7 @@ Vidzyme/
 - **Backward Compatibility**: Automatic sync between `platforms` array and legacy `channel_type` field
 - **Performance Optimization**: Added GIN index for efficient platform array queries
 
-
----
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -372,15 +328,15 @@ Vidzyme/
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
+## 🆘 Support
 
 For support, email support@vidzyme.com or join our Discord community.
 
-## Roadmap
+## 🗺️ Roadmap
 
 - [ ] Advanced AI video customization
 - [ ] More social media platform integrations
@@ -392,6 +348,3 @@ For support, email support@vidzyme.com or join our Discord community.
 ---
 
 **Vidzyme** - Transforming content creation with AI-powered video generation.
-
-```
-```
