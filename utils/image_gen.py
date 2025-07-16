@@ -6,9 +6,15 @@ from tqdm import tqdm
 from urllib.parse import quote_plus
 
 # First need to install translation library:
+<<<<<<< HEAD
 # pip install deep-translator
 
 from deep_translator import GoogleTranslator
+=======
+# pip install googletrans==4.0.0-rc1
+
+from googletrans import Translator
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
 
 def image_main(progress_callback=None):
     # 1) Output folder path
@@ -21,7 +27,11 @@ def image_main(progress_callback=None):
         prompts = [line.strip() for line in f if line.strip()]
 
     # 3) Setup translator
+<<<<<<< HEAD
     translator = GoogleTranslator(source='ar', target='en')
+=======
+    translator = Translator()
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
     
     total_images = len(prompts)
     if progress_callback:
@@ -35,7 +45,11 @@ def image_main(progress_callback=None):
                 progress_callback(f"Generating image {part + 1}/{total_images}: {prompt[:30]}...", current_progress)
             
             # Translate from Arabic to English
+<<<<<<< HEAD
             translated = translator.translate(prompt)
+=======
+            translated = translator.translate(prompt, src="ar", dest="en").text
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
             # URL encode
             encoded = quote_plus(translated)
             url = f"https://image.pollinations.ai/prompt/{encoded}"

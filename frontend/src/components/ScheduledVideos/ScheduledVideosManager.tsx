@@ -15,12 +15,18 @@ interface ScheduledVideoFormData {
   channel_id: string;
   title_template: string;
   prompt_template: string;
+<<<<<<< HEAD
   schedule_type: 'daily' | 'weekly' | 'monthly' | 'custom';
   schedule_time: string;
   schedule_days: number[];
   is_active: boolean;
   auto_publish: boolean;
   max_executions?: number;
+=======
+  schedule_type: 'daily' | 'weekly' | 'monthly';
+  schedule_time: string;
+  is_active: boolean;
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
 }
 
 const ScheduledVideosManager: React.FC = () => {
@@ -39,10 +45,14 @@ const ScheduledVideosManager: React.FC = () => {
     prompt_template: '',
     schedule_type: 'weekly',
     schedule_time: '09:00',
+<<<<<<< HEAD
     schedule_days: [1, 2, 3, 4, 5], // Monday to Friday
     is_active: true,
     auto_publish: false,
     max_executions: undefined
+=======
+    is_active: true
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
   });
 
   useEffect(() => {
@@ -57,7 +67,11 @@ const ScheduledVideosManager: React.FC = () => {
     setIsLoading(true);
     try {
       const [scheduledResponse, channelsResponse] = await Promise.all([
+<<<<<<< HEAD
         DatabaseService.getUserScheduledVideos(),
+=======
+        DatabaseService.getUserScheduledVideos(user.id),
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
         DatabaseService.getUserChannels(user.id)
       ]);
 
@@ -143,7 +157,11 @@ const ScheduledVideosManager: React.FC = () => {
       if (editingVideo) {
         response = await DatabaseService.updateScheduledVideo(editingVideo.id, scheduledVideoData);
       } else {
+<<<<<<< HEAD
         response = await DatabaseService.createScheduledVideo(scheduledVideoData);
+=======
+        response = await DatabaseService.createScheduledVideo(user.id, scheduledVideoData);
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
       }
 
       if (response.success) {
@@ -167,10 +185,14 @@ const ScheduledVideosManager: React.FC = () => {
       prompt_template: '',
       schedule_type: 'weekly',
       schedule_time: '09:00',
+<<<<<<< HEAD
       schedule_days: [1, 2, 3, 4, 5],
       is_active: true,
       auto_publish: false,
       max_executions: undefined
+=======
+      is_active: true
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
     });
     setEditingVideo(null);
     setShowForm(false);
@@ -185,17 +207,27 @@ const ScheduledVideosManager: React.FC = () => {
       prompt_template: video.prompt_template,
       schedule_type: video.schedule_type,
       schedule_time: video.schedule_time,
+<<<<<<< HEAD
       schedule_days: video.schedule_days || [1, 2, 3, 4, 5],
       is_active: video.is_active,
       auto_publish: video.auto_publish || false,
       max_executions: video.max_executions
+=======
+      is_active: video.is_active
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
     });
     setShowForm(true);
   };
 
   const handleToggleActive = async (video: ScheduledVideoWithChannel) => {
     try {
+<<<<<<< HEAD
       const response = await DatabaseService.toggleScheduledVideo(video.id);
+=======
+      const response = await DatabaseService.updateScheduledVideo(video.id, {
+        is_active: !video.is_active
+      });
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
 
       if (response.success) {
         await fetchData();
@@ -235,17 +267,23 @@ const ScheduledVideosManager: React.FC = () => {
       case 'daily': return 'Daily';
       case 'weekly': return 'Weekly';
       case 'monthly': return 'Monthly';
+<<<<<<< HEAD
       case 'custom': return 'Custom Days';
+=======
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
       default: return type;
     }
   };
 
+<<<<<<< HEAD
   const formatScheduleDays = (days: number[]) => {
     if (!days || days.length === 0) return 'No days selected';
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return days.sort().map(day => dayNames[day]).join(', ');
   };
 
+=======
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -328,7 +366,11 @@ const ScheduledVideosManager: React.FC = () => {
                   
                   <p className="text-gray-600 mb-3">{video.prompt_template}</p>
                   
+<<<<<<< HEAD
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+=======
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
                     <div>
                       <span className="font-medium text-gray-700">Channel:</span>
                       <p className="text-gray-600">{video.user_channels?.channel_name}</p>
@@ -341,16 +383,20 @@ const ScheduledVideosManager: React.FC = () => {
                       <span className="font-medium text-gray-700">Time:</span>
                       <p className="text-gray-600">{video.schedule_time}</p>
                     </div>
+<<<<<<< HEAD
                     {(video.schedule_type === 'weekly' || video.schedule_type === 'custom') && video.schedule_days && (
                       <div>
                         <span className="font-medium text-gray-700">Days:</span>
                         <p className="text-gray-600">{formatScheduleDays(video.schedule_days)}</p>
                       </div>
                     )}
+=======
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
                     <div>
                       <span className="font-medium text-gray-700">Next Run:</span>
                       <p className="text-gray-600">{formatNextExecution(video.next_execution)}</p>
                     </div>
+<<<<<<< HEAD
                     {video.auto_publish && (
                       <div>
                         <span className="font-medium text-gray-700">Auto-publish:</span>
@@ -363,6 +409,8 @@ const ScheduledVideosManager: React.FC = () => {
                         <p className="text-gray-600">{video.max_executions}</p>
                       </div>
                     )}
+=======
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
                   </div>
                 </div>
                 
@@ -475,7 +523,10 @@ const ScheduledVideosManager: React.FC = () => {
                       <option value="daily">Daily</option>
                       <option value="weekly">Weekly</option>
                       <option value="monthly">Monthly</option>
+<<<<<<< HEAD
                       <option value="custom">Custom Days</option>
+=======
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
                     </select>
                   </div>
 
@@ -492,6 +543,7 @@ const ScheduledVideosManager: React.FC = () => {
                   </div>
                 </div>
 
+<<<<<<< HEAD
                 {/* Schedule Days - Show for weekly or custom */}
                 {(formData.schedule_type === 'weekly' || formData.schedule_type === 'custom') && (
                   <div>
@@ -576,6 +628,19 @@ const ScheduledVideosManager: React.FC = () => {
                       Auto-publish generated videos
                     </label>
                   </div>
+=======
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="is_active"
+                    checked={formData.is_active}
+                    onChange={(e) => handleInputChange('is_active', e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="is_active" className="ml-2 block text-sm text-gray-700">
+                    Active (start generating videos immediately)
+                  </label>
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">

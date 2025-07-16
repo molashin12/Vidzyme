@@ -1,11 +1,19 @@
+<<<<<<< HEAD
 # Vidzyme - Complete Setup Guide
 
 ## Overview
 This guide will help you set up and run the complete Vidzyme SaaS application with React frontend, FastAPI backend, and Supabase database for automated video generation with multi-platform support.
+=======
+# Vidzyme - Frontend-Backend Integration Setup Guide
+
+## Overview
+This guide will help you set up and run the complete Vidzyme SaaS application with the React frontend connected to the FastAPI backend for automated video generation.
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
 
 ## Prerequisites
 
 ### Backend Requirements
+<<<<<<< HEAD
 - Python 3.9+
 - FFmpeg installed and accessible
 - ImageMagick installed and accessible
@@ -43,32 +51,69 @@ cd Vidzyme
 # Create API key files
 echo "your_gemini_api_key" > gemini_secret.txt
 echo "your_elevenlabs_api_key" > voice_secret.txt
+=======
+- Python 3.8+
+- FFmpeg installed and accessible
+- ImageMagick installed and accessible
+- Required Python packages (see requirements.txt)
+
+### Frontend Requirements
+- Node.js 16+
+- npm or yarn
+
+## Quick Start
+
+### Option 1: Automated Setup (Recommended)
+1. Double-click `start-dev.bat` to start both servers automatically
+2. Wait for both servers to start
+3. Open http://localhost:3000 in your browser
+
+### Option 2: Manual Setup
+
+#### 1. Backend Setup
+```bash
+# Navigate to project root
+cd d:\CODING\Vidzyme
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
 
 # Install Python dependencies
 pip install -r requirements.txt
 
+<<<<<<< HEAD
 # Create .env file with Supabase credentials
 # SUPABASE_URL=your_supabase_url
 # SUPABASE_SERVICE_KEY=your_supabase_service_key
 # OPENAI_API_KEY=your_openai_api_key
 
+=======
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
 # Start the FastAPI server
 python server.py
 ```
 Backend will be available at: http://localhost:8000
 
+<<<<<<< HEAD
 #### 3. Frontend Setup
 ```bash
 # Navigate to frontend directory
 cd frontend
+=======
+#### 2. Frontend Setup
+```bash
+# Navigate to frontend directory
+cd d:\CODING\Vidzyme\frontend
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
 
 # Install dependencies
 npm install
 
+<<<<<<< HEAD
 # Create .env file with Supabase credentials
 # VITE_SUPABASE_URL=your_supabase_url
 # VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
+=======
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
 # Start the development server
 npm run dev
 ```
@@ -77,6 +122,7 @@ Frontend will be available at: http://localhost:3000
 ## Configuration
 
 ### Environment Variables
+<<<<<<< HEAD
 
 **Frontend (.env)**
 ```env
@@ -122,6 +168,25 @@ The application uses Supabase for:
 - **Onboarding**: Interactive setup flow for new users
 - **Channel Management**: Create and manage multiple content channels
 - **Subscription Tracking**: Usage monitoring and billing
+=======
+The frontend uses these environment variables (already configured in `.env`):
+- `VITE_API_BASE_URL`: Backend URL (http://localhost:8000)
+- `VITE_API_PROXY_URL`: Proxy path for development (/api)
+
+### API Integration
+The frontend automatically connects to the backend through:
+- **Proxy Configuration**: Vite proxy redirects `/api/*` to `http://localhost:8000`
+- **API Client**: `src/services/api.ts` handles all backend communication
+- **Real-time Updates**: Server-Sent Events for video generation progress
+
+## Features
+
+### Video Generation
+- **Arabic Voice Selection**: 5 different Arabic voices (Male/Female)
+- **Real-time Progress**: Live updates during video generation
+- **Error Handling**: Comprehensive error display and retry options
+- **Health Monitoring**: Backend connection status indicator
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
 
 ### API Endpoints
 - `GET /`: Welcome message
@@ -129,11 +194,15 @@ The application uses Supabase for:
 - `POST /generate`: Video generation
 - `GET /stream`: Real-time progress updates
 - `GET /static/*`: Generated video files
+<<<<<<< HEAD
 - Database operations handled via Supabase client
+=======
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
 
 ## File Structure
 ```
 Vidzyme/
+<<<<<<< HEAD
 ├── frontend/                    # React frontend
 │   ├── src/
 │   │   ├── components/         # React components
@@ -171,10 +240,38 @@ Vidzyme/
 ├── PLATFORMS_MIGRATION_README.md # Migration guide
 ├── SETUP_GUIDE.md              # This setup guide
 └── README.md                   # Project documentation
+=======
+├── server.py                 # FastAPI backend
+├── requirements.txt          # Python dependencies
+├── start-dev.bat            # Development startup script
+├── SETUP_GUIDE.md           # This file
+├── frontend/
+│   ├── src/
+│   │   ├── services/
+│   │   │   └── api.ts       # API client
+│   │   ├── hooks/
+│   │   │   └── useVideoGeneration.ts  # Video generation hook
+│   │   ├── config/
+│   │   │   └── voices.ts    # Arabic voice configuration
+│   │   ├── components/
+│   │   │   ├── HealthCheck.tsx       # Backend status
+│   │   │   └── Pages/
+│   │   │       └── VideoGenerator.tsx # Main generation UI
+│   │   └── App.tsx          # Main app component
+│   ├── vite.config.ts       # Vite configuration with proxy
+│   ├── package.json         # Frontend dependencies
+│   └── .env                 # Environment variables
+└── utils/                   # Backend utilities
+    ├── gemini.py           # AI text generation
+    ├── image_gen.py        # Image generation
+    ├── voice_gen.py        # Voice synthesis
+    └── video_creation.py   # Video assembly
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
 ```
 
 ## Usage
 
+<<<<<<< HEAD
 ### Getting Started
 1. **Registration**: Create account at http://localhost:3000
 2. **Onboarding**: Complete the interactive setup flow
@@ -235,6 +332,21 @@ Vidzyme/
   3. Check Node.js version (18+)
   4. Verify environment variables
 
+=======
+1. **Start the Application**: Use `start-dev.bat` or start servers manually
+2. **Access Frontend**: Open http://localhost:3000
+3. **Sign In**: Use the authentication system
+4. **Create Video**: 
+   - Navigate to "Create Video"
+   - Select category and enter prompt
+   - Choose Arabic voice and duration
+   - Click "Generate Video"
+   - Monitor real-time progress
+5. **View Results**: Generated videos appear in the dashboard
+
+## Troubleshooting
+
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
 ### Backend Issues
 - **Port 8000 in use**: Change port in `server.py` and update frontend `.env`
 - **FFmpeg not found**: Ensure FFmpeg is installed and paths are correct

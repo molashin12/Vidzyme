@@ -92,7 +92,10 @@ export interface UserChannel {
   channel_name: string;
   channel_description: string;
   channel_type: 'youtube' | 'instagram' | 'tiktok' | 'linkedin' | 'other';
+<<<<<<< HEAD
   platforms: string[];
+=======
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
   channel_url?: string;
   target_audience: string;
   content_style: string;
@@ -120,6 +123,7 @@ export interface ScheduledVideo {
   channel_id: string;
   title_template: string;
   prompt_template: string;
+<<<<<<< HEAD
   schedule_type: 'daily' | 'weekly' | 'monthly' | 'custom';
   schedule_time: string;
   schedule_days?: number[];
@@ -127,6 +131,12 @@ export interface ScheduledVideo {
   is_active: boolean;
   auto_publish?: boolean;
   max_executions?: number;
+=======
+  schedule_type: 'daily' | 'weekly' | 'monthly';
+  schedule_time: string;
+  next_execution: string;
+  is_active: boolean;
+>>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
   last_generated?: string;
   created_at: string;
   updated_at: string;
