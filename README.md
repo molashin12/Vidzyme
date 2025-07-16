@@ -28,18 +28,12 @@ Vidzyme is a comprehensive AI-powered video generation platform that enables use
 - Content categorization and target audience settings
 - Channel-specific video generation
 
-<<<<<<< HEAD
 ### 🔗 Multi-Platform Support
 - Support for multiple platforms per channel (YouTube, Instagram, TikTok, LinkedIn, and more)
 - Select multiple platforms during onboarding for unified content creation
 - Platform-specific content optimization and formatting
 - Seamless video publishing across selected platforms
-=======
-### 🔗 Social Media Integration
-- Connect YouTube, Instagram, TikTok, and LinkedIn accounts
-- Seamless video publishing across platforms
-- Account management and disconnection options
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 
 ### 💳 Subscription Management
 - Multiple subscription tiers (Free, Pro, Enterprise)
@@ -165,10 +159,7 @@ Create two text files in the project root (they are ignored by `.gitignore`):
 
 3. **Install backend dependencies**
    ```bash
-<<<<<<< HEAD
-=======
-   cd backend
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
    pip install -r requirements.txt
    ```
 
@@ -182,11 +173,8 @@ Create two text files in the project root (they are ignored by `.gitignore`):
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
    
-<<<<<<< HEAD
    **Backend (.env in root directory)**
-=======
-   **Backend (.env)**
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
    ```env
    SUPABASE_URL=your_supabase_url
    SUPABASE_SERVICE_KEY=your_supabase_service_key
@@ -202,12 +190,10 @@ Create two text files in the project root (they are ignored by `.gitignore`):
    
    # Then, run the extensions for new features
    cat schema-extensions.sql | supabase db reset
-<<<<<<< HEAD
    
    # Finally, run the platforms migration for multi-platform support
    cat schema-migration-platforms.sql | supabase db reset
-=======
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
    ```
 
 6. **Start the development servers**
@@ -220,10 +206,7 @@ Create two text files in the project root (they are ignored by `.gitignore`):
    
    **Backend**
    ```bash
-<<<<<<< HEAD
-=======
-   cd backend
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
    python server.py
    ```
 
@@ -264,30 +247,23 @@ The project includes an alternative implementation using Google Veo-3 model:
 
 ```
 Vidzyme/
-<<<<<<< HEAD
 ├── frontend/                    # React frontend application
-=======
-├── frontend/
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── Layout/          # Header, Footer, Navigation
 │   │   │   ├── Pages/           # Main application pages
 │   │   │   ├── Onboarding/      # User onboarding flow
 │   │   │   ├── ScheduledVideos/ # Scheduled video management
-<<<<<<< HEAD
 │   │   │   ├── Auth/            # Authentication components
 │   │   │   └── UI/              # Reusable UI components
-=======
-│   │   │   └── Auth/            # Authentication components
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 │   │   ├── hooks/               # Custom React hooks
 │   │   ├── services/            # API and database services
 │   │   ├── contexts/            # React context providers
 │   │   └── config/              # Configuration files
 │   ├── public/                  # Static assets
 │   └── package.json
-<<<<<<< HEAD
 ├── utils/                       # Backend utility functions
 │   ├── gemini.py               # Google Gemini integration
 │   ├── image_gen.py            # Image generation
@@ -306,23 +282,12 @@ Vidzyme/
 ├── schema-extensions.sql       # Extended schema for new features
 ├── schema-migration-platforms.sql # Multi-platform migration
 ├── PLATFORMS_MIGRATION_README.md  # Migration guide
-=======
-├── backend/
-│   ├── services/                # Backend services
-│   ├── models/                  # Data models
-│   ├── routes/                  # API routes
-│   ├── utils/                   # Utility functions
-│   ├── server.py               # Main server file
-│   └── requirements.txt
-├── supabase-schema.sql         # Main database schema
-├── schema-extensions.sql       # Extended schema for new features
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 └── README.md
 ```
 
 ## Key Features Implementation
 
-<<<<<<< HEAD
 ### Multi-Platform Support
 - Select multiple platforms (YouTube, Instagram, TikTok, LinkedIn, Other) during onboarding
 - Store all selected platforms in a single channel record
@@ -333,11 +298,7 @@ Vidzyme/
 ### Onboarding Flow
 - Multi-step form for new user setup
 - Channel information collection with multi-platform selection
-=======
-### Onboarding Flow
-- Multi-step form for new user setup
-- Channel information collection
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 - Content preferences and categorization
 - Skip option for experienced users
 - Automatic redirect to dashboard upon completion
@@ -351,10 +312,8 @@ Vidzyme/
 
 ### Channel Management
 - Create and edit multiple channels
-<<<<<<< HEAD
 - Multi-platform selection and management
-=======
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 - Content description and categorization
 - Target audience specification
 - Integration with scheduled video generation
@@ -390,24 +349,19 @@ Vidzyme/
 - `usage` - Usage tracking and analytics
 
 ### New Feature Tables
-<<<<<<< HEAD
 - `user_channels` - Channel management with multi-platform support
-=======
-- `user_channels` - Channel management
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 - `scheduled_videos` - Automated video schedules
 - `video_queue` - Video processing queue
 - `user_onboarding` - Onboarding progress tracking
 
-<<<<<<< HEAD
 ### Recent Updates
 - **Multi-Platform Migration**: Added `platforms` array column to `user_channels` table
 - **Platform Constraints**: Enforced valid platform values (youtube, instagram, tiktok, linkedin, other)
 - **Backward Compatibility**: Automatic sync between `platforms` array and legacy `channel_type` field
 - **Performance Optimization**: Added GIN index for efficient platform array queries
 
-=======
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 ---
 
 ## Contributing

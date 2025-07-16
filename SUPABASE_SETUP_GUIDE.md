@@ -50,7 +50,6 @@ VITE_SUPABASE_ANON_KEY=your-anon-key-here
 
 1. In your Supabase dashboard, go to **SQL Editor**
 2. Click "New Query"
-<<<<<<< HEAD
 3. Run the schema files in this order:
 
 **Step 1: Main Schema**
@@ -67,26 +66,17 @@ VITE_SUPABASE_ANON_KEY=your-anon-key-here
 ```sql
 -- Copy and run the entire contents of schema-migration-platforms.sql
 ```
-=======
-3. Copy the entire contents of `supabase-schema.sql` (created in your project root)
-4. Paste it into the SQL editor
-5. Click "Run" to execute the schema
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 
 This will create:
 - **users** table (extends Supabase auth)
 - **user_profiles** table (additional user data)
-<<<<<<< HEAD
 - **user_channels** table (multi-platform channel management)
 - **videos** table (video generation records)
 - **subscriptions** table (user subscriptions)
 - **usage** table (credit usage tracking)
 - Multi-platform support with platform constraints
-=======
-- **videos** table (video generation records)
-- **subscriptions** table (user subscriptions)
-- **usage** table (credit usage tracking)
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 - Indexes for performance
 - Row Level Security (RLS) policies
 - Triggers for automatic timestamps
@@ -98,7 +88,6 @@ This will create:
 2. You should see all the tables listed:
    - `users`
    - `user_profiles`
-<<<<<<< HEAD
    - `user_channels` (with platforms array column)
    - `videos`
    - `subscriptions`
@@ -107,11 +96,7 @@ This will create:
    - `platforms` column (text array)
    - Check constraint for valid platforms
    - Proper indexes and RLS policies
-=======
-   - `videos`
-   - `subscriptions`
-   - `usage`
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 
 ## 🔐 Step 4: Configure Authentication
 
@@ -156,15 +141,13 @@ The schema already includes RLS policies, but here's what they do:
 - Users can only access their own profile data
 - Automatic profile creation on user signup
 
-<<<<<<< HEAD
 ### User Channels Table
 - Users can only access their own channels
 - Full CRUD operations for own channels
 - Platform validation via check constraints
 - Support for multi-platform selection
 
-=======
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 ### Subscriptions & Usage Tables
 - Users can only view their own subscription and usage data
 - Insert permissions for new subscriptions and usage records

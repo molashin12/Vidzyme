@@ -279,22 +279,16 @@ for sub in ("images", "audio"):
 import threading
 import asyncio
 
-<<<<<<< HEAD
 from fastapi import FastAPI, Request, HTTPException, Query, Depends, status
-=======
-from fastapi import FastAPI, Request, HTTPException, Query
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse
 from pydantic import BaseModel
-<<<<<<< HEAD
 from typing import Optional, List, Dict, Any
 from datetime import datetime, time as dt_time
-=======
-from typing import Optional
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 
 # Pydantic models for API requests
 class VideoGenerationRequest(BaseModel):
@@ -304,7 +298,6 @@ class VideoGenerationRequest(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
 
-<<<<<<< HEAD
 class ScheduledVideoRequest(BaseModel):
     channel_id: str
     title_template: Optional[str] = None
@@ -326,8 +319,7 @@ class ScheduledVideoUpdate(BaseModel):
     auto_publish: Optional[bool] = None
     max_executions: Optional[int] = None
 
-=======
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 import time
 from utils.gemini import query
 from utils.write_script import write_content, split_text_to_lines
@@ -335,7 +327,6 @@ from utils.image_gen import image_main
 from utils.voice_gen import voice_main
 from utils.video_creation import video_main
 
-<<<<<<< HEAD
 # Import scheduling system
 from scheduler import video_scheduler
 from supabase import create_client, Client
@@ -349,8 +340,7 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-=======
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 # ───────────────────────────────────────────────────────────────────────────────
 # ───────────────────────────────────────────────────────────────────────────────
 BASE = getattr(sys, "_MEIPASS", os.getcwd())
@@ -388,7 +378,6 @@ VOICE_MAPPING = {
     "asma": "qi4PkV9c01kb869Vh7Su"
 }
 
-<<<<<<< HEAD
 # Initialize scheduler on startup
 @app.on_event("startup")
 async def startup_event():
@@ -399,8 +388,7 @@ async def startup_event():
 async def shutdown_event():
     await video_scheduler.stop()
 
-=======
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 # SSE connection queue for real-time updates
 listeners: list[asyncio.Queue] = []
 
@@ -591,7 +579,6 @@ def run_pipeline(topic: str, voice_id: str):
 
 
 # ───────────────────────────────────────────────────────────────────────────────
-<<<<<<< HEAD
 # SCHEDULED VIDEOS API ENDPOINTS
 # ───────────────────────────────────────────────────────────────────────────────
 
@@ -757,8 +744,7 @@ async def delete_queue_item(queue_id: str):
 
 
 # ───────────────────────────────────────────────────────────────────────────────
-=======
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 # Application entry point (for running exe without auto-reload)
 # ───────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":

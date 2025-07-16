@@ -10,10 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-<<<<<<< HEAD
     "@heroicons/react": "^2.2.0",
-=======
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
     "@supabase/supabase-js": "^2.51.0",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",

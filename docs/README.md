@@ -2,11 +2,8 @@
 
 ## 📚 Complete Documentation Suite
 
-<<<<<<< HEAD
 Welcome to the comprehensive documentation for Vidzyme, an AI-powered video generation SaaS platform with multi-platform support. This documentation suite provides everything you need to understand, deploy, develop, and maintain the application.
-=======
-Welcome to the comprehensive documentation for Vidzyme, an AI-powered video generation SaaS platform. This documentation suite provides everything you need to understand, deploy, develop, and maintain the application.
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 
 ## 📖 Documentation Overview
 
@@ -92,7 +89,6 @@ Welcome to the comprehensive documentation for Vidzyme, an AI-powered video gene
 graph TB
     subgraph "Frontend Layer"
         A[React SaaS Interface]
-<<<<<<< HEAD
         A1[Multi-Platform Selection]
         A2[Channel Management]
     end
@@ -101,18 +97,14 @@ graph TB
         DB[Supabase PostgreSQL]
         AUTH[Supabase Auth]
         RLS[Row Level Security]
-=======
-        B[Simple Arabic Interface]
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
     end
     
     subgraph "Backend Layer"
         C[FastAPI Server]
         D[Video Generation Pipeline]
-<<<<<<< HEAD
         SCHED[Scheduler System]
-=======
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
     end
     
     subgraph "External Services"
@@ -127,7 +119,6 @@ graph TB
         J[MoviePy]
     end
     
-<<<<<<< HEAD
     A --> A1
     A --> A2
     A --> AUTH
@@ -136,21 +127,15 @@ graph TB
     C --> DB
     C --> D
     C --> SCHED
-=======
-    A --> C
-    B --> C
-    C --> D
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
     D --> E
     D --> F
     D --> G
     D --> H
     D --> I
     D --> J
-<<<<<<< HEAD
     DB --> RLS
-=======
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 ```
 
 ## 🔄 Video Generation Pipeline
@@ -159,25 +144,19 @@ graph TB
 sequenceDiagram
     participant U as User
     participant F as Frontend
-<<<<<<< HEAD
     participant DB as Supabase
-=======
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
     participant B as Backend
     participant G as Gemini AI
     participant P as Pollinations
     participant E as ElevenLabs
     participant M as MoviePy
     
-<<<<<<< HEAD
     U->>F: Select platforms & topic
     F->>DB: Save channel data
     F->>B: POST /generate
     B->>DB: Update video status
-=======
-    U->>F: Enter topic & voice
-    F->>B: POST /generate
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
     B->>G: Generate script
     G-->>B: Title & content
     B->>P: Generate images
@@ -186,10 +165,8 @@ sequenceDiagram
     E-->>B: Audio files
     B->>M: Assemble video
     M-->>B: Final MP4
-<<<<<<< HEAD
     B->>DB: Save video metadata
-=======
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
     B-->>F: SSE progress updates
     F-->>U: Real-time feedback
 ```
@@ -198,21 +175,17 @@ sequenceDiagram
 
 ### Backend Technologies
 - **Framework**: FastAPI (Python)
-<<<<<<< HEAD
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
-=======
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 - **AI Integration**: Google Gemini 1.5 Flash
 - **Text-to-Speech**: ElevenLabs API
 - **Image Generation**: Pollinations AI
 - **Video Processing**: MoviePy, FFmpeg, ImageMagick
 - **Translation**: Google Translate
 - **Server**: Uvicorn ASGI
-<<<<<<< HEAD
 - **Scheduling**: Custom Python scheduler
-=======
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 
 ### Frontend Technologies
 - **Framework**: React 18 with TypeScript
@@ -220,13 +193,10 @@ sequenceDiagram
 - **Styling**: Tailwind CSS
 - **Icons**: Lucide React
 - **State Management**: React Hooks
-<<<<<<< HEAD
 - **Database Client**: Supabase JavaScript SDK
 - **Authentication**: Supabase Auth
 - **Real-time Updates**: Server-Sent Events + Supabase Realtime
-=======
-- **Real-time Updates**: Server-Sent Events
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 
 ### Development & Deployment
 - **Containerization**: Docker & Docker Compose
@@ -237,7 +207,6 @@ sequenceDiagram
 
 ## 🔐 Security Features
 
-<<<<<<< HEAD
 - **Authentication**: Supabase Auth with JWT tokens
 - **Row Level Security**: Database-level access control
 - **API Key Management**: Secure file-based storage
@@ -247,14 +216,7 @@ sequenceDiagram
 - **CORS Configuration**: Proper cross-origin resource sharing
 - **SSL/TLS Support**: Production-ready HTTPS configuration
 - **Data Privacy**: User data isolation and protection
-=======
-- **API Key Management**: Secure file-based storage
-- **Input Validation**: Comprehensive parameter validation
-- **Error Handling**: Graceful failure with user-friendly messages
-- **CORS Configuration**: Proper cross-origin resource sharing
-- **SSL/TLS Support**: Production-ready HTTPS configuration
-- **Rate Limiting**: Future implementation for API protection
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 
 ## 🌍 Internationalization
 
@@ -275,23 +237,16 @@ sequenceDiagram
 ## 🔮 Future Enhancements
 
 ### Planned Features
-<<<<<<< HEAD
 - **Enhanced Multi-Platform**: Platform-specific optimizations
-=======
-- **User Authentication**: JWT-based authentication system
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 - **Video Templates**: Pre-designed video formats
 - **Batch Processing**: Multiple video generation
 - **Analytics Dashboard**: Usage and performance metrics
 - **API Rate Limiting**: Production-grade request throttling
-<<<<<<< HEAD
 - **Advanced Scheduling**: Complex scheduling patterns
 - **Webhook Support**: Event-driven integrations
 - **Team Collaboration**: Multi-user channel management
-=======
-- **Database Integration**: Persistent data storage
-- **Webhook Support**: Event-driven integrations
->>>>>>> 9ae0d1499acfd62c5677a7f717500482b621a130
+
 
 ### Scalability Improvements
 - **Microservices Architecture**: Service decomposition
