@@ -1,49 +1,48 @@
 export interface VoiceOption {
   id: string;
   name: string;
-  arabicName: string;
   description: string;
   gender: 'male' | 'female';
 }
 
-export const VOICES = [
+export const VOICES: VoiceOption[] = [
   {
-    id: 'haitham',
-    name: 'Haitham',
+    id: 'james',
+    name: 'James',
     gender: 'male',
     description: 'Deep, authoritative voice'
   },
   {
-    id: 'yahya',
-    name: 'Yahya',
+    id: 'david',
+    name: 'David',
     gender: 'male',
     description: 'Warm, friendly voice'
   },
   {
-    id: 'sara',
-    name: 'Sara',
+    id: 'sarah',
+    name: 'Sarah',
     gender: 'female',
     description: 'Clear, professional voice'
   },
   {
-    id: 'mazen',
-    name: 'Mazen',
+    id: 'michael',
+    name: 'Michael',
     gender: 'male',
     description: 'Energetic, youthful voice'
   },
   {
-    id: 'asma',
-    name: 'Asma',
+    id: 'emma',
+    name: 'Emma',
     gender: 'female',
-    description: 'Gentle, soothing voice'
+    description: 'Soft, gentle voice'
   }
 ];
 
-// Voice mapping for backend compatibility
-export const VOICE_MAPPING: Record<string, string> = {
-  'haitham': 'haitham',
-  'yahya': 'yahya',
-  'sara': 'sara',
-  'mazen': 'mazen',
-  'asma': 'asma'
+// Backend compatibility mapping
+export const VOICE_MAPPING = {
+  'james': 'UR972wNGq3zluze0LoIp',
+  'david': 'QRq5hPRAKf5ZhSlTBH6r',
+  'sarah': 'jAAHNNqlbAX9iWjJPEtE',
+  'michael': 'rPNcQ53R703tTmtue1AT',
+  'emma': 'qi4PkV9c01kb869Vh7Su'
 };

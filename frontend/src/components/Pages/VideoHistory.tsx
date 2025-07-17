@@ -1,103 +1,155 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Play, Download, Share2, MoreVertical, Edit, Trash2, Eye, Calendar, Filter, Search } from 'lucide-react';
+import { DatabaseService } from '../../services/database';
+import { useAuth } from '../../hooks/useAuth';
+import { Video } from '../../config/supabase';
+import VideoPlayerModal from '../Modals/VideoPlayerModal';
 
 interface VideoHistoryProps {
   onNavigate: (page: string) => void;
 }
 
+interface VideoWithStats extends Video {
+  views?: number;
+  likes?: number;
+  platform?: string;
+}
+
 export default function VideoHistory({ onNavigate }: VideoHistoryProps) {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedVideo, setSelectedVideo] = useState<number | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  const [videos, setVideos] = useState<VideoWithStats[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [playingVideo, setPlayingVideo] = useState<VideoWithStats | null>(null);
+  const { user } = useAuth();
 
-  const videos = [
-    {
-      id: 1,
-      title: 'AI Revolution in 2025',
-      thumbnail: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
-      duration: '2:45',
-      status: 'Published',
-      platform: 'YouTube',
-      views: '1.2K',
-      likes: 89,
-      created: '2 days ago',
-      published: '1 day ago'
-    },
-    {
-      id: 2,
-      title: 'Quick Python Tutorial',
-      thumbnail: 'https://images.pexels.com/photos/577585/pexels-photo-577585.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
-      duration: '1:30',
-      status: 'Processing',
-      platform: 'TikTok',
-      views: '---',
-      likes: 0,
-      created: '1 day ago',
-      published: null
-    },
-    {
-      id: 3,
-      title: 'Marketing Tips for Startups',
-      thumbnail: 'https://images.pexels.com/photos/7414032/pexels-photo-7414032.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
-      duration: '3:12',
-      status: 'Published',
-      platform: 'Instagram',
-      views: '856',
-      likes: 45,
-      created: '3 days ago',
-      published: '2 days ago'
-    },
-    {
-      id: 4,
-      title: 'Healthy Meal Prep Ideas',
-      thumbnail: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
-      duration: '2:20',
-      status: 'Draft',
-      platform: 'YouTube',
-      views: '---',
-      likes: 0,
-      created: '4 days ago',
-      published: null
-    },
-    {
-      id: 5,
-      title: 'React Best Practices',
-      thumbnail: 'https://images.pexels.com/photos/11035380/pexels-photo-11035380.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
-      duration: '4:15',
-      status: 'Published',
-      platform: 'LinkedIn',
-      views: '2.3K',
-      likes: 156,
-      created: '5 days ago',
-      published: '4 days ago'
-    },
-    {
-      id: 6,
-      title: 'Travel Photography Tips',
-      thumbnail: 'https://images.pexels.com/photos/1666021/pexels-photo-1666021.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
-      duration: '3:45',
-      status: 'Failed',
-      platform: 'TikTok',
-      views: '---',
-      likes: 0,
-      created: '6 days ago',
-      published: null
-    }
-  ];
+  useEffect(() => {
+    const fetchVideos = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
 
-  const filteredVideos = videos.filter(video => {
-    const matchesFilter = filter === 'all' || video.status.toLowerCase() === filter;
-    const matchesSearch = video.title.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+      try {
+        setLoading(true);
+        const result = await DatabaseService.getUserVideos(user.id, 50, 0);
+        
+        if (result.success && result.data) {
+          setVideos(result.data);
+        } else {
+          setError(result.error || 'Failed to fetch videos');
+        }
+      } catch (err) {
+        setError('An error occurred while fetching videos');
+        console.error('Error fetching videos:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVideos();
+  }, [user?.id]);
+
+  const handleDownload = (video: VideoWithStats) => {
+     if (video.video_url) {
+       const link = document.createElement('a');
+       link.href = video.video_url;
+       link.download = `${video.title}.mp4`;
+       document.body.appendChild(link);
+       link.click();
+       document.body.removeChild(link);
+     }
+   };
+
+   const handlePlay = (video: VideoWithStats) => {
+     if (video.video_url) {
+       setPlayingVideo(video);
+     } else {
+       alert('Video is not available for playback');
+     }
+   };
+
+   const handleDelete = async (videoId: string) => {
+     if (window.confirm('Are you sure you want to delete this video?')) {
+       try {
+         const result = await DatabaseService.deleteVideo(videoId);
+         if (result.success) {
+           setVideos(videos.filter(v => v.id !== videoId));
+         } else {
+           alert('Failed to delete video: ' + result.error);
+         }
+       } catch (err) {
+         alert('An error occurred while deleting the video');
+         console.error('Error deleting video:', err);
+       }
+     }
+   };
+
+   const handleShare = (video: VideoWithStats) => {
+     if (navigator.share && video.video_url) {
+       navigator.share({
+         title: video.title,
+         text: video.description || video.title,
+         url: video.video_url,
+       });
+     } else if (video.video_url) {
+       navigator.clipboard.writeText(video.video_url);
+       alert('Video URL copied to clipboard!');
+     }
+   };
+
+   const filteredVideos = videos.filter(video => {
+     const matchesFilter = filter === 'all' || video.status?.toLowerCase() === filter;
+     const matchesSearch = video.title?.toLowerCase().includes(searchTerm.toLowerCase());
+     return matchesFilter && matchesSearch;
+   });
+
+   if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0F1116] text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#27AE60] mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading videos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0F1116] text-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-[#27AE60] text-white px-4 py-2 rounded-lg hover:bg-[#229954] transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Published': return 'bg-green-500/20 text-green-400';
-      case 'Processing': return 'bg-yellow-500/20 text-yellow-400';
-      case 'Draft': return 'bg-blue-500/20 text-blue-400';
-      case 'Failed': return 'bg-red-500/20 text-red-400';
+      case 'completed': return 'bg-green-500/20 text-green-400';
+      case 'processing': return 'bg-yellow-500/20 text-yellow-400';
+      case 'pending': return 'bg-blue-500/20 text-blue-400';
+      case 'failed': return 'bg-red-500/20 text-red-400';
       default: return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'completed': return 'Published';
+      case 'processing': return 'Processing';
+      case 'pending': return 'Draft';
+      case 'failed': return 'Failed';
+      default: return status;
     }
   };
 
@@ -146,43 +198,72 @@ export default function VideoHistory({ onNavigate }: VideoHistoryProps) {
             {/* Status Filter */}
             <div className="flex items-center space-x-2">
               <Filter className="text-gray-400 w-5 h-5" />
-              <select
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#27AE60]"
-              >
-                <option value="all">All Status</option>
-                <option value="published">Published</option>
-                <option value="processing">Processing</option>
-                <option value="draft">Draft</option>
-                <option value="failed">Failed</option>
-              </select>
+              <select 
+               value={filter} 
+               onChange={(e) => setFilter(e.target.value)}
+               className="bg-[#1A1D23] border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#27AE60]"
+             >
+               <option value="all">All Status</option>
+               <option value="completed">Published</option>
+               <option value="processing">Processing</option>
+               <option value="pending">Draft</option>
+               <option value="failed">Failed</option>
+             </select>
             </div>
           </div>
         </div>
 
         {/* Video Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredVideos.map((video) => (
+        {filteredVideos.length === 0 ? (
+             <div className="text-center py-12">
+               <div className="text-gray-400 mb-4">
+                 <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                 </svg>
+               </div>
+               <h3 className="text-xl font-semibold text-white mb-2">
+                 {videos.length === 0 ? 'No videos yet' : 'No videos match your filters'}
+               </h3>
+               <p className="text-gray-400 mb-6">
+                 {videos.length === 0 
+                   ? 'Create your first video to get started!' 
+                   : 'Try adjusting your search or filter criteria.'
+                 }
+               </p>
+               {videos.length === 0 && (
+                 <button
+                   onClick={() => onNavigate('create')}
+                   className="bg-[#27AE60] text-white px-6 py-3 rounded-lg hover:bg-[#229954] transition-colors"
+                 >
+                   Create Your First Video
+                 </button>
+               )}
+             </div>
+           ) : (
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+               {filteredVideos.map((video) => (
             <div key={video.id} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden group hover:border-[#27AE60]/50 transition-all">
               {/* Thumbnail */}
               <div className="relative">
                 <img
-                  src={video.thumbnail}
+                  src={video.thumbnail_url || 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=225&fit=crop'}
                   alt={video.title}
                   className="w-full h-48 object-cover"
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <button className="bg-[#27AE60] text-white p-3 rounded-full hover:bg-[#229954] transition-colors">
+                  <button 
+                    onClick={() => handlePlay(video)}
+                    className="bg-[#27AE60] text-white p-3 rounded-full hover:bg-[#229954] transition-colors"
+                  >
                     <Play className="w-6 h-6" />
                   </button>
                 </div>
                 <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-sm">
-                  {video.duration}
+                  {video.duration ? `${Math.floor(video.duration / 60)}:${(video.duration % 60).toString().padStart(2, '0')}` : '0:00'}
                 </div>
                 <div className="absolute top-2 left-2">
                   <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(video.status)}`}>
-                    {video.status}
+                    {getStatusText(video.status)}
                   </span>
                 </div>
               </div>
@@ -192,33 +273,43 @@ export default function VideoHistory({ onNavigate }: VideoHistoryProps) {
                 <h3 className="font-semibold text-white mb-2 line-clamp-2">{video.title}</h3>
                 
                 <div className="flex items-center justify-between text-sm text-gray-400 mb-3">
-                  <span className={`px-2 py-1 rounded ${getPlatformColor(video.platform)}`}>
-                    {video.platform}
+                  <span className={`px-2 py-1 rounded ${getPlatformColor(video.platform || 'YouTube')}`}>
+                    {video.platform || 'YouTube'}
                   </span>
                   <span className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
-                    {video.created}
+                    {new Date(video.created_at).toLocaleDateString()}
                   </span>
                 </div>
 
-                {video.status === 'Published' && (
+                {video.status === 'completed' && (
                   <div className="flex items-center justify-between text-sm text-gray-400 mb-3">
-                    <span>{video.views} views</span>
-                    <span>{video.likes} likes</span>
+                    <span>{video.views || 0} views</span>
+                    <span>{video.likes || 0} likes</span>
                   </div>
                 )}
 
                 {/* Actions */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <button className="p-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">
+                    <button 
+                      onClick={() => handlePlay(video)}
+                      className="p-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+                    >
                       <Eye className="w-4 h-4" />
                     </button>
-                    <button className="p-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">
+                    <button 
+                      onClick={() => handleDownload(video)}
+                      disabled={!video.video_url}
+                      className="p-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                       <Download className="w-4 h-4" />
                     </button>
-                    {video.status === 'Published' && (
-                      <button className="p-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">
+                    {video.status === 'completed' && (
+                      <button 
+                        onClick={() => handleShare(video)}
+                        className="p-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+                      >
                         <Share2 className="w-4 h-4" />
                       </button>
                     )}
@@ -239,11 +330,17 @@ export default function VideoHistory({ onNavigate }: VideoHistoryProps) {
                             <Edit className="w-4 h-4" />
                             <span>Edit</span>
                           </button>
-                          <button className="flex items-center space-x-2 w-full text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700">
+                          <button 
+                            onClick={() => handleShare(video)}
+                            className="flex items-center space-x-2 w-full text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700"
+                          >
                             <Share2 className="w-4 h-4" />
                             <span>Share</span>
                           </button>
-                          <button className="flex items-center space-x-2 w-full text-left px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-gray-700">
+                          <button 
+                            onClick={() => handleDelete(video.id)}
+                            className="flex items-center space-x-2 w-full text-left px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-gray-700"
+                          >
                             <Trash2 className="w-4 h-4" />
                             <span>Delete</span>
                           </button>
@@ -256,26 +353,19 @@ export default function VideoHistory({ onNavigate }: VideoHistoryProps) {
             </div>
           ))}
         </div>
-
-        {/* Empty State */}
-        {filteredVideos.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Play className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-400 mb-2">No videos found</h3>
-            <p className="text-gray-500 mb-4">
-              {searchTerm ? 'Try adjusting your search terms' : 'Start creating your first video'}
-            </p>
-            <button
-              onClick={() => onNavigate('generator')}
-              className="bg-[#27AE60] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#229954] transition-colors"
-            >
-              Create Your First Video
-            </button>
-          </div>
         )}
       </div>
+
+      {/* Video Player Modal */}
+      {playingVideo && (
+        <VideoPlayerModal
+          isOpen={!!playingVideo}
+          onClose={() => setPlayingVideo(null)}
+          videoUrl={playingVideo.video_url || ''}
+          title={playingVideo.title}
+          thumbnail={playingVideo.thumbnail_url}
+        />
+      )}
     </div>
   );
 }

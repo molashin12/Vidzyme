@@ -2,7 +2,6 @@ import os
 import requests
 import replicate
 from tqdm import tqdm
-from googletrans import Translator
 
 def load_api_token(file_path="REPLICATE_API_TOKEN.txt"):
     try:
@@ -29,15 +28,14 @@ def video_main():
     model = client.models.get("google/veo-3")
     version = model.versions.get("latest")
 
-    # Setup translation
-    translator = Translator()
-
-    # Generate videos
+    # Generate videos with enhanced prompts
     for i, prompt in enumerate(tqdm(prompts, desc="Generating videos")):
         try:
-            translated = translator.translate(prompt, src="ar", dest="en").text
+            # Enhance the prompt for better video generation
+            enhanced_prompt = f"High-quality, cinematic video showing: {prompt}. Professional lighting, smooth camera movement, engaging visual storytelling, suitable for educational content"
+            
             output = version.predict(
-                prompt=translated,
+                prompt=enhanced_prompt,
                 aspect_ratio="16:9",
                 fps=24,
             )

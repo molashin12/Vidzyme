@@ -85,6 +85,94 @@ header {
   white-space: pre-wrap;
 }
 
+/* Video Preview Section */
+.video-preview {
+  margin: 30px 0;
+  width: 100%;
+  max-width: 600px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 15px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(111, 90, 246, 0.3);
+  border: 2px solid rgba(111, 90, 246, 0.5);
+}
+
+.video-preview h3 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #fff;
+  text-shadow: 2px 2px 5px #000;
+}
+
+.video-container {
+  margin-bottom: 20px;
+}
+
+.video-info {
+  margin-top: 15px;
+}
+
+.video-info p {
+  margin: 5px 0;
+  font-size: 14px;
+  color: #ccc;
+}
+
+.video-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.download-btn, .new-video-btn {
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.download-btn {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  box-shadow: 0 0 15px rgba(40, 167, 69, 0.4);
+}
+
+.download-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(40, 167, 69, 0.6);
+}
+
+.new-video-btn {
+  background: linear-gradient(135deg, #6f5af6, #c15af6);
+  color: white;
+  box-shadow: 0 0 15px rgba(111, 90, 246, 0.4);
+}
+
+.new-video-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(111, 90, 246, 0.6);
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .video-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .download-btn, .new-video-btn {
+    width: 200px;
+  }
+}
+
 /* Footer */
 footer {
   margin-top: 20px;

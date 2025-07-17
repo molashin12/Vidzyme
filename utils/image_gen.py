@@ -5,11 +5,6 @@ from io import BytesIO
 from tqdm import tqdm
 from urllib.parse import quote_plus
 
-# First need to install translation library:
-# pip install deep-translator
-
-from deep_translator import GoogleTranslator
-
 
 def image_main(progress_callback=None):
     # 1) Output folder path
@@ -21,26 +16,22 @@ def image_main(progress_callback=None):
     with open(line_file, "r", encoding="utf-8") as f:
         prompts = [line.strip() for line in f if line.strip()]
 
-    # 3) Setup translator
-    translator = GoogleTranslator(source='ar', target='en')
-
-    
     total_images = len(prompts)
     if progress_callback:
         progress_callback(f"Preparing to generate {total_images} images")
 
-    # 4) Fetch and save images
+    # 3) Fetch and save images with enhanced prompts
     for part, prompt in enumerate(prompts):
         try:
             if progress_callback:
                 current_progress = 40 + int((part / total_images) * 20)  # 40-60% range
                 progress_callback(f"Generating image {part + 1}/{total_images}: {prompt[:30]}...", current_progress)
             
-            # Translate from Arabic to English
-            translated = translator.translate(prompt)
+            # Enhance the prompt for better image generation
+            enhanced_prompt = f"High-quality, professional, cinematic image representing: {prompt}. Vibrant colors, sharp details, modern style, engaging visual composition, suitable for educational content"
 
-            # URL encode
-            encoded = quote_plus(translated)
+            # URL encode the enhanced prompt
+            encoded = quote_plus(enhanced_prompt)
             url = f"https://image.pollinations.ai/prompt/{encoded}"
 
             resp = requests.get(url, timeout=30)

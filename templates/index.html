@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Content Creation Tool</title>
+  <title>Vidzyme - AI Video Generator</title>
   <link rel="stylesheet" href="/static/style.css"/>
 </head>
 <body>
@@ -29,11 +29,11 @@
 
       <img src="/static/selectvoice.png" class="label-img" alt="Select voice"/>
       <select id="voice">
-        <option>haitham</option>
-        <option>yahya</option>
-        <option>sara</option>
-        <option>mazen</option>
-        <option>asma</option>
+        <option>james</option>
+        <option>david</option>
+        <option>sarah</option>
+        <option>michael</option>
+        <option>emma</option>
       </select>
 
       <button id="generate-btn">Create Video</button>
@@ -42,27 +42,144 @@
     <!-- Log box -->
     <div id="log-box"></div>
 
+    <!-- Video Preview Section -->
+    <div id="video-preview" class="video-preview" style="display: none;">
+      <h3>🎬 Your Generated Video</h3>
+      <div class="video-container">
+        <video id="preview-video" controls width="100%" style="max-width: 400px; border-radius: 10px;">
+          Your browser does not support the video tag.
+        </video>
+      </div>
+      <div class="video-info">
+        <p id="video-size"></p>
+        <p id="video-created"></p>
+        <div class="video-actions">
+          <a id="download-link" href="#" download="vidzyme_video.mp4" class="download-btn">📥 Download Video</a>
+          <button id="generate-new" class="new-video-btn">🎬 Generate New Video</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Footer -->
-    <footer>Developed by Baraa Mohammed – AI School</footer>
+    <footer>Vidzyme - AI Video Generator</footer>
   </div>
 
   <script>
     const evtSource = new EventSource('/stream');
     const logBox = document.getElementById('log-box');
+    const videoPreview = document.getElementById('video-preview');
+    const previewVideo = document.getElementById('preview-video');
+    const videoSize = document.getElementById('video-size');
+    const videoCreated = document.getElementById('video-created');
+    const downloadLink = document.getElementById('download-link');
+    const generateBtn = document.getElementById('generate-btn');
+    const generateNewBtn = document.getElementById('generate-new');
+
+    // Check for existing video on page load
+    checkForExistingVideo();
+
     evtSource.onmessage = e => {
-      logBox.textContent += e.data + '\n';
+      try {
+        const data = JSON.parse(e.data);
+        
+        // Handle structured progress updates
+        if (data.step && data.progress !== undefined) {
+          const progressMsg = `[${data.progress}%] ${data.step.toUpperCase()}: ${data.message}`;
+          logBox.textContent += progressMsg + '\n';
+          
+          // Update button text with progress
+          if (data.progress < 100) {
+            generateBtn.textContent = `Creating... ${data.progress}%`;
+            generateBtn.disabled = true;
+          }
+          
+          // Handle video completion
+          if (data.step === 'video_ready' && data.video_data) {
+            showVideoPreview(data.video_data);
+            generateBtn.textContent = 'Create Video';
+            generateBtn.disabled = false;
+          } else if (data.step === 'completed') {
+            generateBtn.textContent = 'Create Video';
+            generateBtn.disabled = false;
+            // Check for video after a short delay
+            setTimeout(checkForExistingVideo, 1000);
+          }
+        } else {
+          // Handle plain text messages
+          logBox.textContent += e.data + '\n';
+        }
+      } catch (err) {
+        // Fallback for non-JSON messages
+        logBox.textContent += e.data + '\n';
+      }
+      
       logBox.scrollTop = logBox.scrollHeight;
     };
 
+    async function checkForExistingVideo() {
+      try {
+        const response = await fetch('/video-preview');
+        const data = await response.json();
+        
+        if (data.exists) {
+          showVideoPreview(data);
+        }
+      } catch (error) {
+        console.log('No existing video found');
+      }
+    }
+
+    function showVideoPreview(videoData) {
+      previewVideo.src = videoData.video_url;
+      videoSize.textContent = `File size: ${videoData.file_size_mb} MB`;
+      
+      if (videoData.created_at) {
+        const createdDate = new Date(videoData.created_at);
+        videoCreated.textContent = `Created: ${createdDate.toLocaleString()}`;
+      }
+      
+      downloadLink.href = videoData.video_url;
+      videoPreview.style.display = 'block';
+      
+      // Scroll to video preview
+      videoPreview.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function hideVideoPreview() {
+      videoPreview.style.display = 'none';
+      previewVideo.src = '';
+    }
+
+    generateNewBtn.addEventListener('click', () => {
+      hideVideoPreview();
+      logBox.textContent = '';
+      document.getElementById('topic').focus();
+    });
+
     document.getElementById('generate-btn').addEventListener('click', async () => {
       logBox.textContent = '';
+      hideVideoPreview();
+      
       const topic = document.getElementById('topic').value.trim();
       const voice = document.getElementById('voice').value;
+      
       if (!topic) return alert('Please enter a video idea');
-      const res = await fetch(`/generate?topic=${encodeURIComponent(topic)}&voice_name=${encodeURIComponent(voice)}`);
-      if (!res.ok) {
-        const err = await res.json();
-        alert(err.detail || 'Error');
+      
+      generateBtn.textContent = 'Starting...';
+      generateBtn.disabled = true;
+      
+      try {
+        const res = await fetch(`/generate?topic=${encodeURIComponent(topic)}&voice_name=${encodeURIComponent(voice)}`);
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.detail || 'Error');
+          generateBtn.textContent = 'Create Video';
+          generateBtn.disabled = false;
+        }
+      } catch (error) {
+        alert('Network error occurred');
+        generateBtn.textContent = 'Create Video';
+        generateBtn.disabled = false;
       }
     });
   </script>

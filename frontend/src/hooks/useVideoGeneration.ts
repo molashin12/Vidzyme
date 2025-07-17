@@ -37,6 +37,21 @@ export const useVideoGeneration = () => {
 
   const resetState = resetGeneration; // Alias for backward compatibility
 
+  const fetchVideoUrl = useCallback(async () => {
+    try {
+      const response = await fetch('/api/video-preview');
+      const data = await response.json();
+      if (data.exists && data.video_url) {
+        setVideoUrl(data.video_url);
+      } else {
+        setVideoUrl('/outputs/youtube_short.mp4'); // Fallback
+      }
+    } catch (error) {
+      console.error('Failed to fetch video URL:', error);
+      setVideoUrl('/outputs/youtube_short.mp4'); // Fallback
+    }
+  }, []);
+
   const generateVideo = useCallback(async (data: VideoGenerationData): Promise<VideoGenerationResponse> => {
     setIsGenerating(true);
     setError(null);
@@ -62,7 +77,8 @@ export const useVideoGeneration = () => {
           // Check if generation is complete
           if (update.completed || progressData.progress === 100) {
             setIsGenerating(false);
-            setVideoUrl('/outputs/youtube_short.mp4');
+            // Fetch the actual video URL from the backend
+            fetchVideoUrl();
           }
           
           // Check for errors

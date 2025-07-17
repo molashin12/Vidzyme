@@ -1,0 +1,36 @@
+{
+  "storage": {
+    "max_storage_gb": 10.0,
+    "max_videos": 100,
+    "retention_days": 30,
+    "auto_cleanup_enabled": true,
+    "cleanup_check_interval_hours": 24,
+    "archive_before_delete": true,
+    "archive_directory": "archives"
+  },
+  "compression": {
+    "enabled": true,
+    "auto_compress_after_days": 7,
+    "compression_quality": "medium",
+    "target_size_reduction": 0.3,
+    "ffmpeg_preset": "medium"
+  },
+  "naming": {
+    "include_timestamp": true,
+    "include_uuid": true,
+    "timestamp_format": "%Y%m%d_%H%M%S",
+    "prefix": "video",
+    "extension": "mp4"
+  },
+  "monitoring": {
+    "log_storage_stats": true,
+    "alert_threshold_gb": 8.0,
+    "performance_tracking": true
+  },
+  "backup": {
+    "enabled": false,
+    "backup_directory": "backups",
+    "backup_retention_days": 90,
+    "compress_backups": true
+  }
+}

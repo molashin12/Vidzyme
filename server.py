@@ -348,7 +348,7 @@ BASE = getattr(sys, "_MEIPASS", os.getcwd())
 # ───────────────────────────────────────────────────────────────────────────────
 # FastAPI Setup
 # ───────────────────────────────────────────────────────────────────────────────
-app = FastAPI(title="ARABIAN AI SCHOOL Video Generator")
+app = FastAPI(title="Vidzyme - AI Video Generator")
 
 # Add CORS middleware
 app.add_middleware(
@@ -366,16 +366,23 @@ app.mount(
     name="static"
 )
 
+# Serve generated videos
+app.mount(
+    "/outputs",
+    StaticFiles(directory=os.path.join(BASE, "outputs")),
+    name="outputs"
+)
+
 # Setup Jinja2 templates
 templates = Jinja2Templates(directory=os.path.join(BASE, "templates"))
 
 # Available voice mapping
 VOICE_MAPPING = {
-    "haitham": "UR972wNGq3zluze0LoIp",
-    "yahya": "QRq5hPRAKf5ZhSlTBH6r",
-    "sara": "jAAHNNqlbAX9iWjJPEtE",
-    "mazen": "rPNcQ53R703tTmtue1AT",
-    "asma": "qi4PkV9c01kb869Vh7Su"
+    "james": "UR972wNGq3zluze0LoIp",
+    "david": "QRq5hPRAKf5ZhSlTBH6r",
+    "sarah": "jAAHNNqlbAX9iWjJPEtE",
+    "michael": "rPNcQ53R703tTmtue1AT",
+    "emma": "qi4PkV9c01kb869Vh7Su"
 }
 
 # Initialize scheduler on startup
@@ -452,6 +459,143 @@ async def get_form(request: Request):
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "message": "Backend is running"}
+
+
+@app.get("/video-preview")
+async def get_video_preview():
+    """Check if generated video exists and return preview information"""
+    video_path = os.path.join(BASE, "outputs", "youtube_short.mp4")
+    
+    if os.path.exists(video_path):
+        # Get file size and creation time
+        file_stats = os.stat(video_path)
+        file_size = file_stats.st_size
+        creation_time = datetime.fromtimestamp(file_stats.st_mtime)
+        
+        return {
+            "exists": True,
+            "video_url": "/outputs/youtube_short.mp4",
+            "file_size": file_size,
+            "created_at": creation_time.isoformat(),
+            "file_size_mb": round(file_size / (1024 * 1024), 2)
+        }
+    else:
+        return {
+            "exists": False,
+            "message": "No video has been generated yet"
+        }
+
+
+# ───────────────────────────────────────────────────────────────────────────────
+# FILE MANAGEMENT API ENDPOINTS
+# ───────────────────────────────────────────────────────────────────────────────
+
+@app.get("/api/videos")
+async def list_videos():
+    """List all generated videos with metadata"""
+    try:
+        from utils.file_manager import get_file_manager
+        file_manager = get_file_manager()
+        videos = file_manager.list_videos()
+        return {"success": True, "videos": videos}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error listing videos: {str(e)}")
+
+
+@app.get("/api/videos/{video_id}")
+async def get_video_details(video_id: str):
+    """Get detailed information about a specific video"""
+    try:
+        from utils.file_manager import get_file_manager
+        file_manager = get_file_manager()
+        video_metadata = file_manager.get_video_metadata(video_id)
+        
+        if not video_metadata:
+            raise HTTPException(status_code=404, detail="Video not found")
+            
+        return {"success": True, "video": video_metadata}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting video details: {str(e)}")
+
+
+@app.delete("/api/videos/{video_id}")
+async def delete_video(video_id: str):
+    """Delete a specific video and its metadata"""
+    try:
+        from utils.file_manager import get_file_manager
+        file_manager = get_file_manager()
+        success = file_manager.delete_video(video_id)
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="Video not found")
+            
+        return {"success": True, "message": "Video deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting video: {str(e)}")
+
+
+@app.get("/api/storage/stats")
+async def get_storage_stats():
+    """Get storage statistics and usage information"""
+    try:
+        from utils.file_manager import get_file_manager
+        file_manager = get_file_manager()
+        stats = file_manager.get_storage_stats()
+        return {"success": True, "stats": stats}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting storage stats: {str(e)}")
+
+
+@app.post("/api/storage/cleanup")
+async def trigger_cleanup():
+    """Manually trigger storage cleanup"""
+    try:
+        from utils.file_manager import get_file_manager
+        file_manager = get_file_manager()
+        cleanup_result = file_manager.cleanup_old_videos()
+        return {"success": True, "cleanup_result": cleanup_result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error during cleanup: {str(e)}")
+
+
+@app.post("/api/videos/{video_id}/compress")
+async def compress_video(video_id: str):
+    """Compress a specific video to save space"""
+    try:
+        from utils.file_manager import get_file_manager
+        file_manager = get_file_manager()
+        result = file_manager.compress_video(video_id)
+        
+        if not result["success"]:
+            raise HTTPException(status_code=404, detail="Video not found or compression failed")
+            
+        return {"success": True, "compression_result": result}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error compressing video: {str(e)}")
+
+
+@app.get("/api/videos/latest")
+async def get_latest_video():
+    """Get the most recently generated video"""
+    try:
+        from utils.file_manager import get_file_manager
+        file_manager = get_file_manager()
+        videos = file_manager.list_videos()
+        
+        if not videos:
+            return {"success": False, "message": "No videos found"}
+            
+        # Sort by creation time and get the latest
+        latest_video = max(videos, key=lambda x: x["creation_time"])
+        return {"success": True, "video": latest_video}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting latest video: {str(e)}")
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -569,10 +713,56 @@ def run_pipeline(topic: str, voice_id: str):
             else:
                 broadcast_progress("video", 85, message, "Combining images, voice, and effects")
         
-        video_main(progress_callback=video_progress_callback)
+        # Pass prompt and voice parameters to video_main for metadata tracking
+        video_info = video_main(
+            prompt=topic,
+            voice=voice_id,
+            progress_callback=video_progress_callback
+        )
         broadcast_progress("video", 95, "Finalizing video...", "Adding final touches")
         
-        broadcast_progress("completed", 100, "✅ Video generation completed!", "Find the file at outputs/youtube_short.mp4")
+        # Check if video was created successfully and broadcast completion with preview info
+        if video_info and video_info.get("success"):
+            completion_message = {
+                "message": "✅ Video generation completed!",
+                "video_url": f"/outputs/{video_info['filename']}",
+                "file_size_mb": video_info['file_size_mb'],
+                "preview_available": True,
+                "video_id": video_info['video_id'],
+                "creation_time": video_info['creation_time']
+            }
+            broadcast_progress("completed", 100, "✅ Video generation completed!", 
+                             f"Video ready for preview ({video_info['file_size_mb']} MB)")
+            # Send additional completion data
+            import json
+            broadcast(json.dumps({
+                "step": "video_ready",
+                "progress": 100,
+                "video_data": completion_message,
+                "timestamp": time.time()
+            }))
+        else:
+            # Fallback to legacy path check
+            video_path = os.path.join(BASE, "outputs", "youtube_short.mp4")
+            if os.path.exists(video_path):
+                file_stats = os.stat(video_path)
+                file_size_mb = round(file_stats.st_size / (1024 * 1024), 2)
+                completion_message = {
+                    "message": "✅ Video generation completed!",
+                    "video_url": "/outputs/youtube_short.mp4",
+                    "file_size_mb": file_size_mb,
+                    "preview_available": True
+                }
+                broadcast_progress("completed", 100, "✅ Video generation completed!", f"Video ready for preview ({file_size_mb} MB)")
+                import json
+                broadcast(json.dumps({
+                    "step": "video_ready",
+                    "progress": 100,
+                    "video_data": completion_message,
+                    "timestamp": time.time()
+                }))
+            else:
+                broadcast_progress("completed", 100, "✅ Video generation completed!", "Video generation finished")
 
     except Exception as e:
         broadcast_progress("error", 0, f"❌ Error during processing: {e}", "Video generation failed")

@@ -24,10 +24,16 @@ Vidzyme/
 │   │   ├── components/       # React components
 │   │   │   ├── Animations/   # Animation components
 │   │   │   ├── Layout/       # Layout components
-│   │   │   └── Pages/        # Page components
+│   │   │   ├── Pages/        # Page components
+│   │   │   └── Modals/       # Modal components (VideoPlayerModal)
+│   │   ├── hooks/            # Custom React hooks
+│   │   ├── services/         # API services and clients
+│   │   ├── config/           # Configuration files
+│   │   ├── contexts/         # React contexts
+│   │   ├── utils/            # Utility functions
 │   │   └── styles/           # CSS and styling
 │   ├── package.json          # Node.js dependencies
-│   ├── vite.config.ts        # Vite configuration
+│   ├── vite.config.ts        # Vite configuration with proxy
 │   └── tailwind.config.js    # Tailwind CSS config
 ├── 📁 templates/
 │   └── index.html            # Simple Arabic interface
@@ -619,6 +625,31 @@ markers =
   }
 }
 ```
+
+## 🎬 Video Player Features
+
+### Enhanced Video Player Modal
+The application includes a sophisticated video player modal with the following features:
+
+- **Full-screen playback** with custom controls
+- **Keyboard shortcuts** for enhanced user experience
+- **Auto-hide controls** for immersive viewing
+- **Progress tracking** with seek functionality
+- **Volume control** with mute/unmute
+- **Time formatting** for current time and duration
+- **Responsive design** for all screen sizes
+
+### Video URL Handling
+- **Dynamic URL fetching** from backend `/api/video-preview` endpoint
+- **Fallback mechanism** to default video path
+- **Proxy configuration** in Vite for seamless video serving
+- **Error handling** for missing or corrupted videos
+
+### Video History Integration
+- **Search and filter** functionality for video management
+- **Play button integration** with the video player modal
+- **Video metadata** display and management
+- **Analytics tracking** for video performance
 
 ## 🔄 Development Workflow
 

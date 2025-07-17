@@ -7,7 +7,7 @@ def get_title():
         print("Generating titles...")
         data = query(f"Give me 5 YouTube Shorts titles related to the topic '{topic}' separated by commas")
         if data:
-            # Split text using English or Arabic comma
+            # Split text using English comma
             titles = re.split(r'[,،]', data["candidates"][0]["content"]["parts"][0]["text"])
             # Remove extra spaces and ensure each title is not empty
             titles = [t.strip() for t in titles if t.strip()]
@@ -28,7 +28,7 @@ def get_title():
 
 def get_content(title):
     while True:
-        data = query(f"Explain this topic '{title}' briefly in one minute. Be creative.")
+        data = query(f"Create an engaging, informative script about '{title}' for a 60-second YouTube Short video. Make it conversational, educational, and captivating for English-speaking audiences. Include interesting facts, practical tips, or compelling insights. Structure it with a strong hook, clear main points, and a memorable conclusion.")
         if data:
             content = data["candidates"][0]["content"]["parts"][0]["text"]
             print(content)

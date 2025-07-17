@@ -70,12 +70,14 @@ The platform follows a sophisticated 12-step pipeline:
 - **Multi-platform Optimization**: YouTube, TikTok, Instagram formats
 
 ### SaaS Features
-- **User Authentication**: Sign-up/Sign-in system
+- **User Authentication**: Sign-up/Sign-in system with Supabase
 - **Dashboard Analytics**: Video performance metrics
 - **Usage Tracking**: Monitor API usage and limits
 - **Subscription Management**: Multiple pricing tiers
-- **Video History**: Complete project management
+- **Video History**: Complete project management with enhanced player
 - **Settings Management**: Customizable preferences
+- **Enhanced Video Player**: Full-screen modal with custom controls
+- **Real-time Video Playback**: Seamless video streaming and playback
 
 ### Technical Features
 - **Responsive Design**: Mobile-first approach
@@ -96,7 +98,8 @@ Vidzyme/
 │   │   ├── write_script.py   # Script generation
 │   │   ├── image_gen.py      # Image generation
 │   │   ├── voice_gen.py      # Voice synthesis
-│   │   └── video_creation.py # Video assembly
+│   │   ├── video_creation.py # Video assembly
+│   │   └── file_manager.py   # File management system
 │   ├── templates/            # Jinja2 templates
 │   ├── static/              # Static assets
 │   └── outputs/             # Generated content
@@ -105,11 +108,17 @@ Vidzyme/
 │   │   ├── components/      # React components
 │   │   │   ├── Layout/     # Header, Footer
 │   │   │   ├── Pages/      # Main pages
+│   │   │   ├── Modals/     # Modal components (VideoPlayerModal)
 │   │   │   └── Animations/ # UI animations
+│   │   ├── hooks/          # Custom React hooks
+│   │   ├── services/       # API services
+│   │   ├── config/         # Configuration files
+│   │   ├── contexts/       # React contexts
+│   │   ├── utils/          # Utility functions
 │   │   ├── App.tsx         # Main application
 │   │   └── main.tsx        # Entry point
 │   ├── package.json        # Node dependencies
-│   └── vite.config.ts      # Build configuration
+│   └── vite.config.ts      # Build configuration with proxy
 └── docs/                   # Documentation
 ```
 

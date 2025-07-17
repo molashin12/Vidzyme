@@ -184,6 +184,8 @@ interface GenerationProgress {
 - Download and sharing options
 - Performance analytics
 - Batch operations
+- **Enhanced Video Player Modal** integration
+- **Real-time video playback** with custom controls
 
 **Video Item Structure**:
 ```typescript
@@ -198,6 +200,83 @@ interface VideoItem {
   analytics: {
     views: number;
     engagement: number;
+  };
+}
+```
+
+**Video Player Integration**:
+```typescript
+const [playingVideo, setPlayingVideo] = useState<VideoWithStats | null>(null);
+
+const handlePlay = (video: VideoWithStats) => {
+  if (video.video_url) {
+    setPlayingVideo(video);
+  } else {
+    alert('Video is not available for playback');
+  }
+};
+```
+
+### Modal Components
+
+#### Video Player Modal (`components/Modals/VideoPlayerModal.tsx`)
+
+**Purpose**: Full-featured video playback experience
+
+**Key Features**:
+- **Full-screen Support**: Native fullscreen API integration
+- **Custom Controls**: Play/pause, volume, seek, fullscreen toggle
+- **Keyboard Shortcuts**: Escape to close, spacebar for play/pause
+- **Auto-hide Controls**: Controls fade out during playback
+- **Time Display**: Current time and duration formatting
+- **Volume Control**: Slider-based volume adjustment with mute toggle
+- **Responsive Design**: Adapts to different screen sizes
+
+**Props Interface**:
+```typescript
+interface VideoPlayerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  videoUrl: string;
+  title: string;
+  thumbnail?: string;
+}
+```
+
+**State Management**:
+```typescript
+const [isPlaying, setIsPlaying] = useState(false);
+const [isMuted, setIsMuted] = useState(false);
+const [isFullscreen, setIsFullscreen] = useState(false);
+const [currentTime, setCurrentTime] = useState(0);
+const [duration, setDuration] = useState(0);
+const [volume, setVolume] = useState(1);
+const [showControls, setShowControls] = useState(true);
+```
+
+**Control Functions**:
+```typescript
+const togglePlay = () => {
+  if (videoRef.current) {
+    if (isPlaying) {
+      videoRef.current.pause();
+    } else {
+      videoRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  }
+};
+
+const toggleFullscreen = () => {
+  if (!document.fullscreenElement && modalRef.current) {
+    modalRef.current.requestFullscreen();
+    setIsFullscreen(true);
+  } else if (document.exitFullscreen) {
+    document.exitFullscreen();
+    setIsFullscreen(false);
+  }
+};
+```
   };
 }
 ```

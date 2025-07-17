@@ -1,6 +1,6 @@
 import { Play, Plus, BarChart3, Users, Clock, Video, TrendingUp, Calendar } from 'lucide-react';
 import VideoCreationFlow from '../Animations/VideoCreationFlow';
-import ProcessingIndicator from '../Animations/ProcessingIndicator';
+import VideoPlayerProgressIndicator from '../Animations/VideoPlayerProgressIndicator';
 import { useVideoGeneration } from '../../hooks/useVideoGeneration';
 import { useUser } from '../../contexts/UserContext';
 
@@ -81,11 +81,23 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
         {/* Processing Status - Only show when actively generating */}
         {isGenerating && progress && (
-          <div className="mb-8">
-            <ProcessingIndicator 
-              isProcessing={isGenerating} 
-              progress={progress} 
-            />
+          <div className="mb-8 max-w-4xl mx-auto">
+            <VideoPlayerProgressIndicator
+                isProcessing={isGenerating}
+                progress={progress?.progress || 0}
+                stage={progress?.step || 'initializing'}
+                message={progress?.message || 'Starting video generation...'}
+                details={progress?.details}
+                timestamp={progress?.timestamp}
+                videoPath={undefined}
+                onVideoReady={(path) => {
+                  console.log('Video ready:', path);
+                }}
+                onGoToDashboard={() => {
+                  // Already on dashboard, maybe refresh or scroll to top
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
           </div>
         )}
 

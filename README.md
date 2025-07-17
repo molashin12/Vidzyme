@@ -7,7 +7,7 @@ Vidzyme is a comprehensive AI-powered video generation platform that enables use
 **Vidzyme** is a FastAPI-based pipeline that:
 1. Uses **Google Gemini** (via `gemini_secret.txt`) to write a video script
 2. Splits the script into lines and generates AI images (Pollinations or any other image/video generation API)
-3. Translates prompts via `googletrans` if needed
+3. Enhances prompts for better image generation quality
 4. Generates voice-overs with **ElevenLabs TTS** (`voice_secret.txt`)
 5. Assembles images or videos, audio, and captions into a short video with **MoviePy**, **FFmpeg**, and **ImageMagick**
 6. Streams real-time progress via Server-Sent Events (SSE)
@@ -23,7 +23,9 @@ Ideal for automating quick YouTube Shorts, videos or social media clips on any t
 - **Dynamic Video Composition** (MoviePy + FFmpeg + ImageMagick)
 - **Live Progress Updates** through SSE endpoint
 - Real-time video processing status
-- Video history and management
+- **Enhanced Video Player** with full-screen support and custom controls
+- **Video History Management** with search, filtering, and analytics
+- **Dynamic Video URL Fetching** from backend with fallback support
 
 ### 📅 Scheduled Video Generation
 - Automated video generation on custom schedules (daily, weekly, monthly)
@@ -65,10 +67,12 @@ Ideal for automating quick YouTube Shorts, videos or social media clips on any t
 
 ### Frontend
 - **React 18** with TypeScript
-- **Vite** for fast development and building
+- **Vite** for fast development and building with proxy configuration
 - **Tailwind CSS** for styling
 - **Lucide React** for icons
 - **Custom hooks** for state management
+- **Supabase** for authentication and database
+- **Video Player Modal** with full-screen support and custom controls
 
 ### Backend
 - **FastAPI** for high-performance API

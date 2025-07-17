@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Play, Wand2, Settings, Clock, User, Globe, Download, Share2 } from 'lucide-react';
 import VideoCreationFlow from '../Animations/VideoCreationFlow';
-import ProcessingIndicator from '../Animations/ProcessingIndicator';
+import VideoPlayerProgressIndicator from '../Animations/VideoPlayerProgressIndicator';
 import { useVideoGeneration } from '../../hooks/useVideoGeneration';
 import { useUser } from '../../contexts/UserContext';
 import { DatabaseService } from '../../services/database';
@@ -401,22 +401,58 @@ export default function VideoGenerator({ onNavigate }: VideoGeneratorProps) {
         {/* Step 4: Review & Generate */}
         {step === 4 && (
           <div className="bg-gray-800/50 rounded-xl p-8 border border-gray-700 animate-slideInUp">
-            {/* Show progress prominently when generating */}
-            {isGenerating ? (
+            {/* Show progress prominently when generating or video is ready */}
+            {isGenerating || videoUrl ? (
               <div className="text-center">
                 <h2 className="text-2xl font-semibold mb-6 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#27AE60] mr-3"></div>
-                  Generating Your Video
+                  {isGenerating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#27AE60] mr-3"></div>
+                      Generating Your Video
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-6 h-6 text-[#27AE60] mr-3 animate-pulse" />
+                      Your Video is Ready!
+                    </>
+                  )}
                 </h2>
-                <p className="text-gray-400 mb-8">Please wait while we create your video. This may take a few minutes.</p>
+                <p className="text-gray-400 mb-8">
+                  {isGenerating 
+                    ? "Please wait while we create your video. This may take a few minutes."
+                    : "Your video has been generated successfully. You can preview and download it below."
+                  }
+                </p>
                 
                 {/* Large Progress Display */}
                 {progress && (
-                  <div className="max-w-2xl mx-auto">
-                    <ProcessingIndicator
-                      isProcessing={isGenerating}
-                      progress={progress}
-                    />
+                  <div className="max-w-4xl mx-auto">
+                    <VideoPlayerProgressIndicator
+                  isProcessing={isGenerating}
+                  progress={progress?.progress || 0}
+                  stage={progress?.step || 'initializing'}
+                  message={progress?.message || 'Starting video generation...'}
+                  details={progress?.details}
+                  timestamp={progress?.timestamp}
+                  videoPath={videoUrl || undefined}
+                  onVideoReady={(path) => {
+                    console.log('Video ready:', path);
+                    setVideoSaved(true);
+                  }}
+                  onDownload={() => {
+                    if (videoUrl) {
+                      const link = document.createElement('a');
+                      link.href = videoUrl;
+                      link.download = 'generated-video.mp4';
+                      link.click();
+                    }
+                  }}
+                  onGoToDashboard={() => onNavigate('dashboard')}
+                  onCreateAnother={() => {
+                    resetState();
+                    setVideoSaved(false);
+                  }}
+                />
                   </div>
                 )}
                 
