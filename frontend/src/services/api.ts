@@ -8,6 +8,7 @@ interface VideoGenerationRequest {
 
 interface VideoGenerationResponse {
   success: boolean;
+  video_id?: string;
   video_path?: string;
   message?: string;
 }

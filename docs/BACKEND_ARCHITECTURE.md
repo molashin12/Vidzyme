@@ -1,23 +1,28 @@
-# Backend Architecture Documentation
+# Vidzyme Backend Architecture
 
-## 🏗️ FastAPI Backend Overview
+## Overview
 
-The Vidzyme backend is built on FastAPI, providing a robust and scalable foundation for AI-powered video generation. The architecture follows a modular design pattern with clear separation of concerns.
+The Vidzyme backend is built on FastAPI, providing a robust and scalable foundation for AI-powered video generation. The architecture follows a modular design pattern with clear separation of concerns, featuring real-time processing, queue management, and scheduled video generation.
 
-## 📋 Core Components
+## Core Components
 
 ### 1. Main Application (`server.py`)
 
 #### Application Setup
 ```python
-app = FastAPI(title="ARABIAN AI SCHOOL Video Generator")
+app = FastAPI(
+    title="Vidzyme AI Video Generator",
+    description="AI-powered video generation platform",
+    version="2.0.0"
+)
 ```
 
 #### Key Features:
-- **Static File Serving**: Serves CSS, images, and assets
-- **Template Rendering**: Jinja2 integration for HTML templates
-- **CORS Configuration**: Cross-origin resource sharing
-- **Environment Detection**: Handles both development and production
+- **Static File Serving**: Serves generated videos and assets
+- **Template Rendering**: Jinja2 integration for web interface
+- **CORS Configuration**: Cross-origin resource sharing for frontend
+- **Environment Detection**: Handles development and production modes
+- **Real-time Progress**: Server-Sent Events for live updates
 
 #### Binary Dependencies Management
 ```python
@@ -28,12 +33,61 @@ if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
     ffmpeg_path = os.path.join(base, "ffmpeg", "ffmpeg.exe")
     imagemagick_path = os.path.join(base, "ImageMagick", "magick.exe")
 else:
-    # Development mode
-    ffmpeg_path = r"ffmpeg.exe"
-    imagemagick_path = r"C:\Program Files\ImageMagick\magick.exe"
+    # Development mode - system PATH
+    ffmpeg_path = "ffmpeg"
+    imagemagick_path = "magick"
 ```
 
-### 2. API Endpoints
+### 2. Video Scheduler (`scheduler.py`)
+
+#### VideoScheduler Class
+```python
+class VideoScheduler:
+    def __init__(self):
+        self.scheduler = BackgroundScheduler()
+        self.video_queue = VideoQueue()
+        self.running_jobs = {}
+```
+
+#### Key Features:
+- **Background Processing**: APScheduler for automated video generation
+- **Queue Integration**: Manages video processing queue
+- **Job Management**: Track and control scheduled tasks
+- **Database Integration**: Supabase for persistent storage
+
+#### Scheduling Functions:
+```python
+def schedule_video(self, scheduled_video_data: dict) -> str:
+    """Schedule a new video for automated generation"""
+
+def update_schedule(self, video_id: str, updates: dict):
+    """Update existing schedule parameters"""
+
+def delete_schedule(self, video_id: str):
+    """Remove scheduled video and cancel job"""
+```
+
+### 3. Queue Management (`video_queue.py`)
+
+#### VideoQueue Class
+```python
+class VideoQueue:
+    def __init__(self):
+        self.queue = []
+        self.processing = {}
+        self.completed = {}
+        self.failed = {}
+```
+
+#### Queue Operations:
+- **Add to Queue**: `add_video(video_data)`
+- **Process Queue**: `process_next()`
+- **Status Tracking**: Real-time status updates
+- **Error Handling**: Failed video management
+
+## API Endpoints
+
+### Core Video Generation
 
 #### Root Endpoint (`/`)
 - **Method**: GET
@@ -41,33 +95,82 @@ else:
 - **Returns**: HTML template with voice options
 - **Template**: `index.html`
 
-#### Video Generation Endpoint (`/generate`)
-- **Method**: GET
+#### Video Generation (`/generate`)
+- **Method**: POST
+- **Purpose**: Immediate video generation
 - **Parameters**:
   - `topic` (required): Video topic/subject
   - `voice_name` (required): Selected voice option
 - **Process**: Initiates async video generation pipeline
-- **Returns**: JSON status response
+- **Returns**: JSON with video_id and status
 
-#### Server-Sent Events (`/stream`)
+#### Progress Tracking (`/progress/{video_id}`)
 - **Method**: GET
 - **Purpose**: Real-time progress updates
-- **Protocol**: SSE (Server-Sent Events)
+- **Protocol**: Server-Sent Events (SSE)
 - **Content-Type**: `text/event-stream`
+- **Returns**: Live progress data
 
-### 3. Voice Configuration
+#### Video Download (`/video/{video_id}`)
+- **Method**: GET
+- **Purpose**: Download generated video file
+- **Returns**: MP4 video file or 404 if not found
 
-```python
-voice_options = {
-    "هيثم": "UR972wNGq3zluze0LoIp",
-    "يحيى": "QRq5hPRAKf5ZhSlTBH6r",
-    "سارة": "jAAHNNqlbAX9iWjJPEtE",
-    "مازن": "rPNcQ53R703tTmtue1AT",
-    "أسماء": "qi4PkV9c01kb869Vh7Su"
-}
-```
+### Scheduled Video Management
 
-## 🔧 Utility Modules
+#### Create Scheduled Video (`/scheduled-videos`)
+- **Method**: POST
+- **Purpose**: Create new automated video schedule
+- **Body**: Schedule configuration (frequency, time, channel, etc.)
+- **Returns**: Created schedule with ID
+
+#### List Scheduled Videos (`/scheduled-videos`)
+- **Method**: GET
+- **Purpose**: Get all user's scheduled videos
+- **Query Parameters**: Optional filtering
+- **Returns**: Array of scheduled video objects
+
+#### Update Schedule (`/scheduled-videos/{video_id}`)
+- **Method**: PUT
+- **Purpose**: Update existing schedule
+- **Body**: Updated schedule parameters
+- **Returns**: Updated schedule object
+
+#### Delete Schedule (`/scheduled-videos/{video_id}`)
+- **Method**: DELETE
+- **Purpose**: Remove scheduled video
+- **Returns**: Success confirmation
+
+#### Toggle Schedule (`/scheduled-videos/{video_id}/toggle`)
+- **Method**: POST
+- **Purpose**: Enable/disable schedule
+- **Returns**: Updated schedule status
+
+### Queue Management
+
+#### Queue Status (`/queue/status`)
+- **Method**: GET
+- **Purpose**: Get current queue statistics
+- **Returns**: Queue metrics and processing status
+
+#### Queue Videos (`/queue/videos`)
+- **Method**: GET
+- **Purpose**: List videos in processing queue
+- **Returns**: Array of queued video objects
+
+### System Health
+
+#### Health Check (`/health`)
+- **Method**: GET
+- **Purpose**: System health monitoring
+- **Returns**: Service status and dependencies
+
+#### API Documentation (`/docs`)
+- **Method**: GET
+- **Purpose**: Interactive API documentation
+- **Framework**: Swagger UI
+
+## Utility Modules
 
 ### 1. Gemini Integration (`utils/gemini.py`)
 
@@ -78,17 +181,20 @@ Handles all interactions with Google Gemini API for content generation.
 ```python
 def query(text: str) -> dict:
     """Send query to Gemini API and return response"""
+
+def generate_script(topic: str, style: str = "educational") -> str:
+    """Generate video script for given topic"""
 ```
 
 #### Configuration
-- **API Key**: Read from `gemini_secret.txt`
+- **API Key**: Environment variable or `gemini_secret.txt`
 - **Model**: `gemini-1.5-flash-latest`
 - **Endpoint**: Google Generative Language API
 
 #### Error Handling
-- Validates API key existence and content
-- Graceful exit with user-friendly messages
-- HTTP status code validation
+- API key validation
+- Rate limiting protection
+- Graceful fallback mechanisms
 
 ### 2. Script Generation (`utils/write_script.py`)
 
@@ -96,7 +202,7 @@ def query(text: str) -> dict:
 
 ##### `write_content(content: str)`
 - Saves generated content to `outputs/text.txt`
-- UTF-8 encoding for Arabic text support
+- UTF-8 encoding for multilingual support
 
 ##### `split_text_to_lines()`
 - Processes text for video segmentation
@@ -105,36 +211,44 @@ def query(text: str) -> dict:
 
 #### Text Processing Pipeline
 ```python
-text_input = text_input.replace(':', ' ')
-                      .replace('-', ' ')
-                      .replace('_', " ")
-                      .replace('!', '.')
-                      .replace('*', "")
-                      .replace(',', '.')
+def clean_text(text: str) -> str:
+    """Clean and normalize text for video processing"""
+    return text.replace(':', ' ') \
+              .replace('-', ' ') \
+              .replace('_', " ") \
+              .replace('!', '.') \
+              .replace('*', "") \
+              .replace(',', '.')
 ```
 
 ### 3. Image Generation (`utils/image_gen.py`)
 
 #### Integration
-- **Service**: Pollinations AI
-- **Translation**: Google Translate (Arabic to English)
+- **Primary Service**: Pollinations AI
+- **Fallback Service**: Alternative image generation APIs
+- **Translation**: Google Translate for multilingual support
 - **Output Format**: JPEG images
 
 #### Process Flow
 1. Read segmented text from `line_by_line.txt`
-2. Translate each segment from Arabic to English
+2. Translate text if needed (Arabic to English)
 3. Generate image URL with encoded prompt
 4. Download and save images as `part{n}.jpg`
+5. Validate image quality and format
 
 #### API Integration
 ```python
-url = f"https://image.pollinations.ai/prompt/{encoded_prompt}"
+def generate_image(prompt: str, part_number: int) -> str:
+    """Generate image for video segment"""
+    url = f"https://image.pollinations.ai/prompt/{encoded_prompt}"
+    # Download and save logic
 ```
 
 #### Error Handling
 - Network timeout protection (30 seconds)
 - Image format validation
-- Graceful failure with error logging
+- Retry mechanism for failed generations
+- Fallback to default images
 
 ### 4. Voice Synthesis (`utils/voice_gen.py`)
 
@@ -142,9 +256,18 @@ url = f"https://image.pollinations.ai/prompt/{encoded_prompt}"
 - **API**: ElevenLabs Text-to-Speech
 - **Model**: `eleven_multilingual_v2`
 - **Output**: MP3 audio files
+- **Languages**: Arabic, English, and others
 
-#### Voice Settings
+#### Voice Configuration
 ```python
+voice_options = {
+    "هيثم": "UR972wNGq3zluze0LoIp",
+    "يحيى": "QRq5hPRAKf5ZhSlTBH6r",
+    "سارة": "jAAHNNqlbAX9iWjJPEtE",
+    "مازن": "rPNcQ53R703tTmtue1AT",
+    "أسماء": "qi4PkV9c01kb869Vh7Su"
+}
+
 voice_settings = {
     "stability": 0.0,
     "similarity_boost": 1.0,
@@ -154,10 +277,11 @@ voice_settings = {
 ```
 
 #### Process Flow
-1. Load API key from `voice_secret.txt`
+1. Load API key from environment or file
 2. Process each text segment individually
 3. Generate audio with specified voice ID
 4. Save as `part{n}.mp3` in outputs/audio/
+5. Validate audio quality and duration
 
 ### 5. Video Assembly (`utils/video_creation.py`)
 
@@ -165,29 +289,34 @@ voice_settings = {
 - **Framework**: MoviePy for video composition
 - **Dependencies**: FFmpeg, ImageMagick
 - **Output**: MP4 video file
+- **Resolution**: 1080x1920 (9:16 aspect ratio)
 
 #### Video Composition Elements
 
 ##### Text Overlay
 ```python
-text_clip = TextClip(
-    txt=text,
-    fontsize=80,
-    color="white",
-    font=font_path,
-    method="caption",
-    size=(1000, None),
-    align="center"
-).set_duration(duration).set_position(("center", 1450))
+def create_text_clip(text: str, duration: float) -> TextClip:
+    """Create text overlay for video segment"""
+    return TextClip(
+        txt=text,
+        fontsize=80,
+        color="white",
+        font=font_path,
+        method="caption",
+        size=(1000, None),
+        align="center"
+    ).set_duration(duration).set_position(("center", 1450))
 ```
 
 ##### Image Processing
 ```python
-image_clip = ImageClip(image)
-    .resize(width=1280)
-    .set_duration(duration + 0.5)
-    .set_position(("center", "center"))
-    .fx(vfx.resize, zoom_in_image)  # Dynamic zoom effect
+def create_image_clip(image_path: str, duration: float) -> ImageClip:
+    """Create image clip with zoom effect"""
+    return ImageClip(image_path) \
+        .resize(width=1280) \
+        .set_duration(duration + 0.5) \
+        .set_position(("center", "center")) \
+        .fx(vfx.resize, zoom_in_image)
 ```
 
 #### Video Specifications
@@ -195,8 +324,9 @@ image_clip = ImageClip(image)
 - **Frame Rate**: 30 FPS
 - **Format**: MP4 with H.264 encoding
 - **Audio**: Synchronized with video segments
+- **Effects**: Dynamic zoom, text animations
 
-## 🔄 Processing Pipeline
+## Processing Pipeline
 
 ### Asynchronous Execution
 The video generation runs in a separate thread to prevent blocking:

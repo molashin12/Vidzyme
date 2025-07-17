@@ -192,12 +192,15 @@ def video_main(progress_callback=None, prompt: str = "Generated Video", voice: s
         print(f"Warning: Could not create legacy copy: {e}")
     
     return {
+        "success": True,
         "video_id": video_id,
         "filename": filename,
         "file_path": str(video_path),
         "file_size": file_size,
+        "file_size_mb": round(file_size / (1024 * 1024), 2),
         "duration": total_duration,
-        "metadata": video_metadata
+        "metadata": video_metadata,
+        "creation_time": datetime.now().isoformat()
     }
 
 if __name__ == "__main__":

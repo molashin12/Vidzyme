@@ -4,19 +4,23 @@
 
 Vidzyme is a comprehensive AI-powered video creation SaaS platform that automates the entire video production pipeline from script generation to publishing. The platform combines a FastAPI backend with a modern React frontend to provide users with an intuitive interface for creating professional video content at scale.
 
+The platform features a complete SaaS architecture with user authentication, subscription management, onboarding flows, scheduled video generation, queue management, and multi-channel support for content creators and businesses.
+
 ## 🏗️ Architecture Overview
 
 ### System Architecture
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │    Backend      │    │  External APIs  │
-│   (React)       │◄──►│   (FastAPI)     │◄──►│                 │
-│                 │    │                 │    │ • Google Gemini │
-│ • Landing Page  │    │ • Video Pipeline│    │ • ElevenLabs    │
-│ • Dashboard     │    │ • SSE Streaming │    │ • Pollinations  │
-│ • Video Gen     │    │ • File Management│    │                 │
-│ • Auth System   │    │                 │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │    Backend      │    │   Database      │    │  External APIs  │
+│   (React)       │◄──►│   (FastAPI)     │◄──►│   (Supabase)    │◄──►│                 │
+│                 │    │                 │    │                 │    │ • Google Gemini │
+│ • Landing Page  │    │ • Video Pipeline│    │ • User Auth     │    │ • ElevenLabs    │
+│ • Dashboard     │    │ • SSE Streaming │    │ • Subscriptions │    │ • Pollinations  │
+│ • Onboarding    │    │ • Queue Manager │    │ • Video History │    │ • Veo 3 API     │
+│ • Subscriptions │    │ • Scheduler     │    │ • Channels      │    │                 │
+│ • Video Gen     │    │ • File Manager  │    │ • Queue Data    │    │                 │
+│ • Settings      │    │ • Health Check  │    │                 │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
 ### Technology Stack
@@ -24,23 +28,34 @@ Vidzyme is a comprehensive AI-powered video creation SaaS platform that automate
 #### Backend
 - **Framework**: FastAPI (Python)
 - **Video Processing**: MoviePy, FFmpeg, ImageMagick
-- **Real-time Communication**: Server-Sent Events (SSE)
-- **AI Integration**: Google Gemini API, ElevenLabs TTS
+- **Real-time Communication**: Server-Sent Events (SSE), WebSocket
+- **AI Integration**: Google Gemini API, ElevenLabs TTS, Veo 3 API
 - **Image Generation**: Pollinations AI API
 - **Translation**: Google Translate
+- **Queue Management**: Custom queue system with persistence
+- **Scheduling**: APScheduler for automated video generation
+- **File Management**: Advanced file handling and cleanup
 
 #### Frontend
 - **Framework**: React 18 with TypeScript
 - **Build Tool**: Vite
 - **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **State Management**: React Hooks
+- **Icons**: Lucide React, Heroicons
+- **State Management**: React Hooks, Context API
 - **Animations**: Custom CSS animations
+- **UI Components**: Custom modal system, enhanced video player
+
+#### Database & Authentication
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Real-time**: Supabase Realtime subscriptions
+- **Storage**: Supabase Storage for video files
 
 #### External Services
 - **Google Gemini**: Script generation and content creation
 - **ElevenLabs**: High-quality text-to-speech conversion
 - **Pollinations AI**: AI-powered image generation
+- **Veo 3 API**: Advanced video generation capabilities
 - **Google Translate**: Multi-language support
 
 ## 🎬 Video Generation Pipeline
@@ -62,64 +77,118 @@ The platform follows a sophisticated 12-step pipeline:
 
 ## 🌟 Key Features
 
-### Core Functionality
+### Core Video Generation
 - **AI Script Generation**: Automated content creation using Google Gemini
 - **Multi-voice Support**: 5 different Arabic voice options via ElevenLabs
 - **Dynamic Image Generation**: AI-generated visuals for each script segment
+- **Advanced Video Generation**: Veo 3 API integration for enhanced video creation
 - **Real-time Progress**: Live updates via Server-Sent Events
 - **Multi-platform Optimization**: YouTube, TikTok, Instagram formats
 
-### SaaS Features
-- **User Authentication**: Sign-up/Sign-in system with Supabase
-- **Dashboard Analytics**: Video performance metrics
+### User Management & Authentication
+- **Secure Authentication**: Sign-up/Sign-in system with Supabase
+- **User Onboarding**: Multi-step onboarding flow for new users
+- **Profile Management**: User settings and preferences
+- **Channel Management**: Multi-channel support with platform preferences
+- **User Dashboard**: Comprehensive analytics and video management
+
+### Subscription & Billing
+- **Multiple Subscription Tiers**: Free, Pro, and Enterprise plans
 - **Usage Tracking**: Monitor API usage and limits
-- **Subscription Management**: Multiple pricing tiers
+- **Billing Management**: Automated billing cycles and payment processing
+- **Feature Access Control**: Tier-based feature restrictions
+- **Subscription Analytics**: Usage statistics and billing history
+
+### Scheduled Video Generation
+- **Automated Scheduling**: Schedule videos for future generation
+- **Queue Management**: Advanced queue system with priority handling
+- **Batch Processing**: Process multiple videos efficiently
+- **Recurring Schedules**: Set up recurring video generation
+- **Schedule Analytics**: Track scheduled video performance
+
+### Video Management
 - **Video History**: Complete project management with enhanced player
-- **Settings Management**: Customizable preferences
 - **Enhanced Video Player**: Full-screen modal with custom controls
 - **Real-time Video Playback**: Seamless video streaming and playback
+- **Video Organization**: Categorize and manage video content
+- **Download Management**: Secure video download and sharing
 
 ### Technical Features
-- **Responsive Design**: Mobile-first approach
+- **Responsive Design**: Mobile-first approach with RTL support
 - **Progressive Enhancement**: Graceful degradation
-- **Error Handling**: Comprehensive error management
-- **Performance Optimization**: Lazy loading and caching
+- **Error Handling**: Comprehensive error management and recovery
+- **Performance Optimization**: Lazy loading, caching, and optimization
 - **Accessibility**: WCAG compliance considerations
+- **Real-time Updates**: WebSocket and SSE for live updates
 
 ## 📁 Project Structure
 
 ```
 Vidzyme/
-├── backend/
-│   ├── server.py              # FastAPI application
-│   ├── requirements.txt       # Python dependencies
-│   ├── utils/                 # Core utilities
-│   │   ├── gemini.py         # Google Gemini integration
-│   │   ├── write_script.py   # Script generation
-│   │   ├── image_gen.py      # Image generation
-│   │   ├── voice_gen.py      # Voice synthesis
-│   │   ├── video_creation.py # Video assembly
-│   │   └── file_manager.py   # File management system
-│   ├── templates/            # Jinja2 templates
-│   ├── static/              # Static assets
-│   └── outputs/             # Generated content
-├── frontend/
+├── server.py                  # Main FastAPI application
+├── scheduler.py               # Video scheduling system
+├── requirements.txt           # Python dependencies
+├── package.json              # Node.js dependencies (for frontend build)
+├── config/                   # Configuration files
+│   ├── .env.example         # Environment variables template
+│   └── database.sql         # Database schema and setup
+├── utils/                    # Core backend utilities
+│   ├── gemini.py            # Google Gemini integration
+│   ├── write_script.py      # Script generation
+│   ├── image_gen.py         # Image generation
+│   ├── voice_gen.py         # Voice synthesis
+│   ├── video_creation.py    # Video assembly
+│   ├── file_manager.py      # File management system
+│   └── video_queue.py       # Queue management
+├── veo3/                     # Veo 3 API integration
+│   ├── veo3_client.py       # Veo 3 API client
+│   └── video_generator.py   # Advanced video generation
+├── templates/                # Jinja2 templates
+├── static/                   # Static backend assets
+├── outputs/                  # Generated video content
+├── logs/                     # Application logs
+├── test_output/             # Test and development outputs
+├── frontend/                # React frontend application
 │   ├── src/
 │   │   ├── components/      # React components
-│   │   │   ├── Layout/     # Header, Footer
-│   │   │   ├── Pages/      # Main pages
-│   │   │   ├── Modals/     # Modal components (VideoPlayerModal)
-│   │   │   └── Animations/ # UI animations
+│   │   │   ├── Layout/     # Header, Footer, Navigation
+│   │   │   ├── Pages/      # Main application pages
+│   │   │   │   ├── Dashboard.tsx
+│   │   │   │   ├── VideoGenerator.tsx
+│   │   │   │   ├── VideoHistory.tsx
+│   │   │   │   ├── Settings.tsx
+│   │   │   │   ├── Subscription.tsx
+│   │   │   │   └── OnboardingFlow.tsx
+│   │   │   ├── Modals/     # Modal components
+│   │   │   │   └── VideoPlayerModal.tsx
+│   │   │   └── Animations/ # UI animations and effects
 │   │   ├── hooks/          # Custom React hooks
-│   │   ├── services/       # API services
-│   │   ├── config/         # Configuration files
+│   │   │   ├── useAuth.ts
+│   │   │   ├── useOnboarding.ts
+│   │   │   └── useSubscription.ts
+│   │   ├── services/       # API services and database
+│   │   │   ├── api.ts
+│   │   │   └── database.ts
 │   │   ├── contexts/       # React contexts
+│   │   │   ├── AuthContext.tsx
+│   │   │   └── OnboardingContext.tsx
+│   │   ├── config/         # Frontend configuration
 │   │   ├── utils/          # Utility functions
-│   │   ├── App.tsx         # Main application
-│   │   └── main.tsx        # Entry point
-│   ├── package.json        # Node dependencies
-│   └── vite.config.ts      # Build configuration with proxy
-└── docs/                   # Documentation
+│   │   ├── App.tsx         # Main application component
+│   │   └── main.tsx        # Application entry point
+│   ├── package.json        # Frontend dependencies
+│   ├── vite.config.ts      # Vite build configuration
+│   ├── tailwind.config.js  # Tailwind CSS configuration
+│   └── tsconfig.json       # TypeScript configuration
+└── docs/                   # Comprehensive documentation
+    ├── README.md           # Main project documentation
+    ├── PROJECT_OVERVIEW.md # This file
+    ├── FRONTEND_ARCHITECTURE.md
+    ├── BACKEND_ARCHITECTURE.md
+    ├── API_DOCUMENTATION.md
+    ├── DEVELOPMENT_GUIDE.md
+    ├── DEPLOYMENT_GUIDE.md
+    └── FRONTEND_INTEGRATION_GUIDE.md
 ```
 
 ## 🔧 Configuration Requirements

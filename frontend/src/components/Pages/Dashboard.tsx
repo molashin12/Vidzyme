@@ -9,8 +9,8 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ onNavigate }: DashboardProps) {
-  const { isGenerating, progress } = useVideoGeneration();
-  const { stats, usage, videos, isLoading } = useUser();
+  const { stats, usage, videos, isLoading, profile } = useUser();
+  const { isGenerating, progress, retryInfo, retryGeneration, currentVideoId } = useVideoGeneration(profile?.id);
   
   // Format stats for display
   const formattedStats = [
@@ -82,6 +82,22 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         {/* Processing Status - Only show when actively generating */}
         {isGenerating && progress && (
           <div className="mb-8 max-w-4xl mx-auto">
+            {/* Resume indicator */}
+            {currentVideoId && (
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
+                <div className="flex items-center justify-center space-x-3">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span className="text-blue-400 font-medium">
+                    Resumed ongoing video generation
+                  </span>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                </div>
+                <p className="text-blue-300 text-sm text-center mt-2">
+                  Your video generation continued from where it left off
+                </p>
+              </div>
+            )}
+            
             <VideoPlayerProgressIndicator
                 isProcessing={isGenerating}
                 progress={progress?.progress || 0}
@@ -90,6 +106,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 details={progress?.details}
                 timestamp={progress?.timestamp}
                 videoPath={undefined}
+                retryInfo={retryInfo}
+                onRetry={retryGeneration}
                 onVideoReady={(path) => {
                   console.log('Video ready:', path);
                 }}

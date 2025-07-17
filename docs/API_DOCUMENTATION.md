@@ -53,39 +53,7 @@ GET /
 - **Template**: `index.html`
 - **Status Code**: `200 OK`
 
-**Response Body**: HTML page with:
-- Voice selection dropdown
-- Topic input field
-- Generate button
-- Progress display area
-
-**Voice Options Included**:
-```javascript
-{
-  "هيثم": "UR972wNGq3zluze0LoIp",
-  "يحيى": "QRq5hPRAKf5ZhSlTBH6r",
-  "سارة": "jAAHNNqlbAX9iWjJPEtE",
-  "مازن": "rPNcQ53R703tTmtue1AT",
-  "أسماء": "qi4PkV9c01kb869Vh7Su"
-}
-```
-
-**Example Response**:
-```html
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-    <meta charset="UTF-8">
-    <title>مولد المحتوى</title>
-    <!-- Additional head content -->
-</head>
-<body>
-    <!-- Interface content -->
-</body>
-</html>
-```
-
-### 2. Video Generation Endpoint
+### 2. Core Video Generation
 
 #### Generate Video
 ```http
@@ -99,10 +67,6 @@ GET /generate
 |-----------|------|----------|-------------|
 | `topic` | string | Yes | Video topic or subject matter |
 | `voice_name` | string | Yes | Selected voice option (Arabic name) |
-
-**Parameter Validation**:
-- `topic`: Must not be empty after trimming whitespace
-- `voice_name`: Must be one of the predefined voice options
 
 **Example Request**:
 ```http
@@ -121,82 +85,286 @@ GET /generate?topic=الذكاء الاصطناعي&voice_name=هيثم
 }
 ```
 
-**Status Codes**:
-- `200 OK`: Generation started successfully
-- `400 Bad Request`: Invalid parameters
-- `500 Internal Server Error`: Server error
+#### Get Video Progress
+```http
+GET /progress/{video_id}
+```
 
-**Error Response Example**:
+**Description**: Get the current progress of a video generation task.
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `video_id` | string | Yes | Unique video generation ID |
+
+**Response Format**:
 ```json
 {
-  "status": "error",
-  "message": "topic cannot be empty",
-  "error_code": "INVALID_TOPIC"
+  "video_id": "uuid-string",
+  "status": "processing",
+  "progress": 65,
+  "current_step": "voice_synthesis",
+  "message": "Generating voice for segment 3 of 5",
+  "estimated_remaining": 45
 }
 ```
 
-### 3. Server-Sent Events Endpoint
+#### Get Video Details
+```http
+GET /video/{video_id}
+```
 
-#### Real-time Progress Stream
+**Description**: Retrieve details and download link for a completed video.
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `video_id` | string | Yes | Unique video generation ID |
+
+**Response Format**:
+```json
+{
+  "video_id": "uuid-string",
+  "title": "Generated Title",
+  "status": "completed",
+  "duration": 45,
+  "file_path": "/outputs/youtube_short.mp4",
+  "download_url": "/static/outputs/youtube_short.mp4",
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
+### 3. Scheduled Video Management
+
+#### Create Scheduled Video
+```http
+POST /scheduled-videos
+```
+
+**Description**: Schedule a video for future generation.
+
+**Request Body**:
+```json
+{
+  "topic": "الذكاء الاصطناعي",
+  "voice_name": "هيثم",
+  "scheduled_time": "2024-01-15T15:30:00Z",
+  "recurring": false,
+  "interval_hours": null
+}
+```
+
+**Response Format**:
+```json
+{
+  "id": "schedule-uuid",
+  "topic": "الذكاء الاصطناعي",
+  "voice_name": "هيثم",
+  "scheduled_time": "2024-01-15T15:30:00Z",
+  "status": "scheduled",
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
+#### Get Scheduled Videos
+```http
+GET /scheduled-videos
+```
+
+**Description**: Retrieve all scheduled videos.
+
+**Query Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `status` | string | No | Filter by status (scheduled, processing, completed, failed) |
+| `limit` | integer | No | Maximum number of results (default: 50) |
+| `offset` | integer | No | Number of results to skip (default: 0) |
+
+**Response Format**:
+```json
+{
+  "scheduled_videos": [
+    {
+      "id": "schedule-uuid",
+      "topic": "الذكاء الاصطناعي",
+      "voice_name": "هيثم",
+      "scheduled_time": "2024-01-15T15:30:00Z",
+      "status": "scheduled",
+      "created_at": "2024-01-15T10:30:00Z"
+    }
+  ],
+  "total": 1,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+#### Get Scheduled Video Details
+```http
+GET /scheduled-videos/{schedule_id}
+```
+
+**Description**: Get details of a specific scheduled video.
+
+**Path Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `schedule_id` | string | Yes | Unique schedule ID |
+
+#### Update Scheduled Video
+```http
+PUT /scheduled-videos/{schedule_id}
+```
+
+**Description**: Update a scheduled video (only if not yet processed).
+
+**Request Body**:
+```json
+{
+  "topic": "Updated topic",
+  "scheduled_time": "2024-01-15T16:30:00Z"
+}
+```
+
+#### Delete Scheduled Video
+```http
+DELETE /scheduled-videos/{schedule_id}
+```
+
+**Description**: Cancel a scheduled video.
+
+### 4. Queue Management
+
+#### Get Queue Status
+```http
+GET /queue/status
+```
+
+**Description**: Get current queue status and statistics.
+
+**Response Format**:
+```json
+{
+  "queue_size": 3,
+  "processing": 1,
+  "pending": 2,
+  "completed_today": 15,
+  "failed_today": 1,
+  "average_processing_time": 180
+}
+```
+
+#### Get Queue Videos
+```http
+GET /queue/videos
+```
+
+**Description**: Get all videos currently in the queue.
+
+**Response Format**:
+```json
+{
+  "videos": [
+    {
+      "id": "queue-uuid",
+      "topic": "الذكاء الاصطناعي",
+      "voice_name": "هيثم",
+      "status": "processing",
+      "progress": 45,
+      "added_at": "2024-01-15T10:30:00Z",
+      "estimated_completion": "2024-01-15T10:33:00Z"
+    }
+  ],
+  "total": 3
+}
+```
+
+#### Clear Queue
+```http
+DELETE /queue/clear
+```
+
+**Description**: Clear all pending videos from the queue (admin only).
+
+**Response Format**:
+```json
+{
+  "message": "Queue cleared successfully",
+  "cleared_count": 5
+}
+```
+
+### 5. System Health
+
+#### Health Check
+```http
+GET /health
+```
+
+**Description**: Check system health and service status.
+
+**Response Format**:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "services": {
+    "database": "connected",
+    "gemini_api": "available",
+    "elevenlabs_api": "available",
+    "ffmpeg": "installed",
+    "imagemagick": "installed"
+  },
+  "system": {
+    "cpu_usage": 45.2,
+    "memory_usage": 67.8,
+    "disk_space": 85.3,
+    "queue_size": 3
+  }
+}
+```
+
+#### API Documentation
+```http
+GET /docs
+```
+
+**Description**: Interactive API documentation (Swagger UI).
+
+#### Alternative API Documentation
+```http
+GET /redoc
+```
+
+**Description**: Alternative API documentation (ReDoc).
+
+### 6. Real-time Updates
+
+#### Server-Sent Events Stream
 ```http
 GET /stream
 ```
 
-**Description**: Provides real-time progress updates during video generation using Server-Sent Events (SSE).
+**Description**: Real-time progress updates for video generation.
 
 **Response Headers**:
 ```http
 Content-Type: text/event-stream
 Cache-Control: no-cache
 Connection: keep-alive
-Access-Control-Allow-Origin: *
 ```
 
 **Event Format**:
 ```
 data: {"step": "script_generation", "progress": 20, "message": "Generating video script..."}
-
-data: {"step": "image_generation", "progress": 40, "message": "Creating images..."}
-
-data: {"step": "voice_synthesis", "progress": 60, "message": "Synthesizing voice..."}
-
-data: {"step": "video_assembly", "progress": 80, "message": "Assembling video..."}
-
-data: {"step": "completed", "progress": 100, "message": "Video generation completed!"}
 ```
 
-**Progress Steps**:
-1. **Initialization** (0-10%): Setting up pipeline
-2. **Script Generation** (10-30%): Creating content with Gemini
-3. **Image Generation** (30-50%): Generating visuals
-4. **Voice Synthesis** (50-70%): Creating audio
-5. **Video Assembly** (70-90%): Combining assets
-6. **Finalization** (90-100%): Saving and cleanup
-
-**Client Implementation Example**:
-```javascript
-const eventSource = new EventSource('/stream');
-
-eventSource.onmessage = function(event) {
-    const data = JSON.parse(event.data);
-    updateProgress(data.progress, data.message);
-};
-
-eventSource.onerror = function(event) {
-    console.error('SSE error:', event);
-};
-```
-
-### 4. Static File Endpoints
-
-#### Serve Static Assets
+#### WebSocket Connection (Future)
 ```http
-GET /static/{file_path}
+WS /ws/{video_id}
 ```
 
-**Description**: Serves static files (CSS, images, JavaScript).
-
-**Supported File Types**:
+**Description**: WebSocket connection for real-time video generation updates.
 - CSS files (`.css`)
 - JavaScript files (`.js`)
 - Image files (`.png`, `.jpg`, `.jpeg`, `.gif`, `.svg`)

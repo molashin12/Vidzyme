@@ -1,0 +1,166 @@
+{
+  "system": {
+    "python_version": "3.12.1 (tags/v3.12.1:2305ca5, Dec  7 2023, 22:03:25) [MSC v.1937 64 bit (AMD64)]",
+    "platform": "win32",
+    "working_directory": "D:\\CODING\\Vidzyme",
+    "project_root": "D:\\CODING\\Vidzyme",
+    "path_entries": [
+      "D:\\CODING\\Vidzyme",
+      "D:\\CODING\\Vidzyme\\utils\\tts",
+      "C:\\Python312\\python312.zip",
+      "C:\\Python312\\DLLs",
+      "C:\\Python312\\Lib"
+    ]
+  },
+  "file_structure": {
+    "required": {
+      "voice_secret.txt": true,
+      "gemini_secret.txt": true,
+      "utils/tts/tts_factory.py": true,
+      "utils/tts/elevenlabs_provider.py": true,
+      "utils/tts/gemini_tts_provider.py": true,
+      "utils/tts/base_provider.py": true
+    },
+    "optional": {
+      "utils/tts/exceptions.py": true,
+      "utils/tts/logging_utils.py": true,
+      "utils/tts/validation.py": true,
+      "config/tts_config.json": true
+    }
+  },
+  "dependencies": {
+    "required": {
+      "requests": true,
+      "pathlib": true,
+      "json": true
+    },
+    "optional": {
+      "numpy": true,
+      "scipy": true,
+      "pydub": false
+    }
+  },
+  "imports": {
+    "utils.tts.base_provider": true,
+    "utils.tts.elevenlabs_provider": true,
+    "utils.tts.gemini_tts_provider": true,
+    "utils.tts.tts_factory": true
+  },
+  "validation": {
+    "sections": {
+      "dependencies": {
+        "status": true,
+        "details": {
+          "missing_required": [],
+          "missing_optional": []
+        }
+      },
+      "file_structure": {
+        "status": true,
+        "details": {
+          "missing_files": [],
+          "missing_directories": []
+        }
+      },
+      "api_keys": {
+        "status": true,
+        "details": {
+          "elevenlabs": {
+            "file_path": "D:\\CODING\\Vidzyme\\voice_secret.txt",
+            "status": true,
+            "message": "API key file is valid: API key format is valid"
+          },
+          "gemini": {
+            "file_path": "D:\\CODING\\Vidzyme\\gemini_secret.txt",
+            "status": true,
+            "message": "API key file is valid: API key format is valid"
+          }
+        }
+      },
+      "configuration": {
+        "status": true,
+        "details": {
+          "config_file": "D:\\CODING\\Vidzyme\\utils\\tts_config.py",
+          "validation_passed": true,
+          "errors": [],
+          "warnings": [
+            "quality_preference should be one of: ['cost', 'balanced', 'quality']"
+          ]
+        }
+      }
+    },
+    "summary": {
+      "overall_status": true,
+      "sections_passed": 4,
+      "sections_total": 4,
+      "sections": {
+        "dependencies": {
+          "status": true,
+          "details": {
+            "missing_required": [],
+            "missing_optional": []
+          }
+        },
+        "file_structure": {
+          "status": true,
+          "details": {
+            "missing_files": [],
+            "missing_directories": []
+          }
+        },
+        "api_keys": {
+          "status": true,
+          "details": {
+            "elevenlabs": {
+              "file_path": "D:\\CODING\\Vidzyme\\voice_secret.txt",
+              "status": true,
+              "message": "API key file is valid: API key format is valid"
+            },
+            "gemini": {
+              "file_path": "D:\\CODING\\Vidzyme\\gemini_secret.txt",
+              "status": true,
+              "message": "API key file is valid: API key format is valid"
+            }
+          }
+        },
+        "configuration": {
+          "status": true,
+          "details": {
+            "config_file": "D:\\CODING\\Vidzyme\\utils\\tts_config.py",
+            "validation_passed": true,
+            "errors": [],
+            "warnings": [
+              "quality_preference should be one of: ['cost', 'balanced', 'quality']"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "tts_factory": {
+    "initialized": true,
+    "available_providers": [
+      "elevenlabs",
+      "gemini"
+    ],
+    "provider_count": 2
+  },
+  "provider_test": {
+    "elevenlabs": {
+      "initialized": true,
+      "valid": true
+    },
+    "gemini": {
+      "initialized": true,
+      "valid": true
+    }
+  },
+  "summary": {
+    "total_issues": 0,
+    "total_warnings": 0,
+    "total_info": 0,
+    "issues": [],
+    "warnings": [],
+    "info": []
+  }
+}

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { User as SupabaseUser, Session, AuthError } from '@supabase/supabase-js';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Session } from '@supabase/supabase-js';
 import { supabase, User } from '../config/supabase';
 
 interface AuthState {
@@ -27,71 +27,120 @@ export function useAuth(): AuthState & AuthActions {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch user profile from our custom users table
+  // Cache for ongoing profile fetch requests to prevent duplicates
+  const profileFetchCache = useRef<Map<string, Promise<User | null>>>(new Map());
+  
+  // Debounce timer for auth state changes
+  const authStateChangeTimer = useRef<NodeJS.Timeout | null>(null);
+  
+  // Track last processed session to prevent duplicate processing
+  const lastProcessedSessionId = useRef<string | null>(null);
+
+  // Fetch user profile from our custom users table with caching and deduplication
   const fetchUserProfile = useCallback(async (userId: string): Promise<User | null> => {
-    try {
-      console.log('Fetching user profile for:', userId);
-      
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user profile:', error.code, error.message);
-        
-        // If user doesn't exist in our custom table (PGRST116 = no rows returned)
-        if (error.code === 'PGRST116') {
-          console.warn('User profile not found in custom table, user may need to complete setup');
-          // Try to get user data from auth and create a profile
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user && user.id === userId) {
-            console.log('Creating missing user profile from auth data');
-            const newUserProfile: Omit<User, 'created_at' | 'updated_at'> = {
-              id: user.id,
-              email: user.email || '',
-              name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-              subscription_plan: 'free',
-              subscription_status: 'active',
-              credits_remaining: 10
-            };
-            
-            // Try to create the user profile
-            const { data: createdUser, error: createError } = await supabase
-              .from('users')
-              .insert(newUserProfile)
-              .select()
-              .single();
-              
-            if (createError) {
-              console.error('Failed to create user profile:', createError);
-              return null;
-            }
-            
-            console.log('Successfully created user profile');
-            return createdUser;
-          }
-        }
-        return null;
-      }
-
-      console.log('Successfully fetched user profile');
-      return data;
-    } catch (err) {
-      console.error('Unexpected error fetching user profile:', err);
-      return null;
+    // Check if there's already an ongoing request for this user
+    const existingRequest = profileFetchCache.current.get(userId);
+    if (existingRequest) {
+      console.log('Using cached profile fetch request for:', userId);
+      return existingRequest;
     }
-  }, []);
 
-  // Initialize auth state
+    // Create new request and cache it
+    const fetchRequest = (async (): Promise<User | null> => {
+      try {
+        console.log('Fetching user profile for:', userId);
+        
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching user profile:', error.code, error.message);
+          
+          // If user doesn't exist in our custom table (PGRST116 = no rows returned)
+          if (error.code === 'PGRST116') {
+            console.warn('User profile not found in custom table, user may need to complete setup');
+            // Try to get user data from auth and create a profile
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && user.id === userId) {
+              console.log('Creating missing user profile from auth data');
+              const newUserProfile: Omit<User, 'created_at' | 'updated_at'> = {
+                id: user.id,
+                email: user.email || '',
+                name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+                subscription_plan: 'free',
+                subscription_status: 'active',
+                credits_remaining: 10
+              };
+              
+              // Try to create the user profile
+              const { data: createdUser, error: createError } = await supabase
+                .from('users')
+                .insert(newUserProfile)
+                .select()
+                .single();
+                
+              if (createError) {
+                console.error('Failed to create user profile:', createError);
+                return null;
+              }
+              
+              console.log('Successfully created user profile');
+              return createdUser;
+            }
+          }
+          return null;
+        }
+
+        console.log('Successfully fetched user profile');
+        return data;
+      } catch (err) {
+        console.error('Unexpected error fetching user profile:', err);
+        return null;
+      } finally {
+        // Remove from cache when request completes
+        profileFetchCache.current.delete(userId);
+      }
+    })();
+
+    // Cache the request
+  profileFetchCache.current.set(userId, fetchRequest);
+  return fetchRequest;
+}, []);
+
+// Add session persistence check
+const checkSessionPersistence = useCallback(async () => {
+  try {
+    // Check if there's a stored session
+    const storedSession = localStorage.getItem('supabase.auth.token');
+    if (storedSession) {
+      console.log('Found stored session, attempting to restore...');
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (session && !error) {
+        console.log('Successfully restored session from storage');
+        return true;
+      } else {
+        console.log('Stored session is invalid, clearing...');
+        localStorage.removeItem('supabase.auth.token');
+      }
+    }
+    return false;
+  } catch (err) {
+    console.error('Error checking session persistence:', err);
+    return false;
+  }
+}, []);
+
+// Initialize auth state
   useEffect(() => {
     let mounted = true;
     let timeoutId: NodeJS.Timeout;
 
     const initializeAuth = async () => {
       try {
-        // Set a longer timeout and add better error handling
+        // Set a more reasonable timeout
         timeoutId = setTimeout(() => {
           if (mounted) {
             console.warn('Auth initialization timeout - falling back to signed out state');
@@ -99,7 +148,7 @@ export function useAuth(): AuthState & AuthActions {
             setSession(null);
             setUser(null);
           }
-        }, 15000); // Increased to 15 seconds
+        }, 20000); // Increased to 20 seconds
 
         // Check for session persistence first
         const hasPersistedSession = await checkSessionPersistence();
@@ -117,12 +166,15 @@ export function useAuth(): AuthState & AuthActions {
           setSession(session);
           
           if (session?.user && mounted) {
-            // Try to fetch user profile with timeout protection
+            // Store session ID to prevent duplicate processing
+            lastProcessedSessionId.current = session.user.id;
+            
+            // Try to fetch user profile with longer timeout protection
             try {
               const userProfile = await Promise.race([
                 fetchUserProfile(session.user.id),
                 new Promise<null>((_, reject) => 
-                  setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+                  setTimeout(() => reject(new Error('Profile fetch timeout')), 10000) // Increased to 10 seconds
                 )
               ]);
               
@@ -148,6 +200,7 @@ export function useAuth(): AuthState & AuthActions {
             }
           } else if (mounted) {
             setUser(null);
+            lastProcessedSessionId.current = null;
           }
         }
       } catch (err) {
@@ -167,59 +220,89 @@ export function useAuth(): AuthState & AuthActions {
 
     initializeAuth();
 
-    // Listen for auth changes
+    // Listen for auth changes with debouncing
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
 
-        console.log('Auth state changed:', event, session?.user?.id);
-        setSession(session);
-        
-        if (session?.user) {
-          try {
-            const userProfile = await Promise.race([
-              fetchUserProfile(session.user.id),
-              new Promise<null>((_, reject) => 
-                setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
-              )
-            ]);
-            setUser(userProfile);
-          } catch (profileError) {
-            console.warn('Failed to fetch user profile in auth change, using basic user data:', profileError);
-            // Create a basic user object from session data
-            const basicUser: User = {
-              id: session.user.id,
-              email: session.user.email || '',
-              name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-              subscription_plan: 'free',
-              subscription_status: 'active',
-              credits_remaining: 10,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            };
-            setUser(basicUser);
-          }
-        } else {
-          setUser(null);
+        // Clear any existing debounce timer
+        if (authStateChangeTimer.current) {
+          clearTimeout(authStateChangeTimer.current);
         }
-        
-        setLoading(false);
+
+        // Debounce auth state changes to prevent rapid-fire updates
+        authStateChangeTimer.current = setTimeout(async () => {
+          if (!mounted) return;
+
+          const sessionId = session?.user?.id || null;
+          
+          // Skip if we've already processed this session
+          if (sessionId === lastProcessedSessionId.current && session) {
+            console.log('Skipping duplicate auth state change for session:', sessionId);
+            return;
+          }
+
+          console.log('Auth state changed:', event, sessionId);
+          lastProcessedSessionId.current = sessionId;
+          setSession(session);
+          
+          if (session?.user) {
+            try {
+              const userProfile = await Promise.race([
+                fetchUserProfile(session.user.id),
+                new Promise<null>((_, reject) => 
+                  setTimeout(() => reject(new Error('Profile fetch timeout')), 8000) // Increased to 8 seconds
+                )
+              ]);
+              if (mounted) {
+                setUser(userProfile);
+              }
+            } catch (profileError) {
+              console.warn('Failed to fetch user profile in auth change, using basic user data:', profileError);
+              // Create a basic user object from session data
+              if (mounted) {
+                const basicUser: User = {
+                  id: session.user.id,
+                  email: session.user.email || '',
+                  name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+                  subscription_plan: 'free',
+                  subscription_status: 'active',
+                  credits_remaining: 10,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                };
+                setUser(basicUser);
+              }
+            }
+          } else {
+            if (mounted) {
+              setUser(null);
+            }
+          }
+          
+          if (mounted) {
+            setLoading(false);
+          }
+        }, 500); // 500ms debounce delay
       }
     );
 
     return () => {
       mounted = false;
       clearTimeout(timeoutId);
+      if (authStateChangeTimer.current) {
+        clearTimeout(authStateChangeTimer.current);
+      }
       subscription.unsubscribe();
     };
-  }, [fetchUserProfile]);
+  }, [fetchUserProfile, checkSessionPersistence]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -372,7 +455,7 @@ export function useAuth(): AuthState & AuthActions {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
@@ -446,29 +529,6 @@ export function useAuth(): AuthState & AuthActions {
       setLoading(false);
     }
   }, [fetchUserProfile]);
-
-  // Add session persistence check
-  const checkSessionPersistence = useCallback(async () => {
-    try {
-      // Check if there's a stored session
-      const storedSession = localStorage.getItem('supabase.auth.token');
-      if (storedSession) {
-        console.log('Found stored session, attempting to restore...');
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (session && !error) {
-          console.log('Successfully restored session from storage');
-          return true;
-        } else {
-          console.log('Stored session is invalid, clearing...');
-          localStorage.removeItem('supabase.auth.token');
-        }
-      }
-      return false;
-    } catch (err) {
-      console.error('Error checking session persistence:', err);
-      return false;
-    }
-  }, []);
 
   return {
     user,

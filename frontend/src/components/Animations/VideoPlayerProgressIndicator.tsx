@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Pause, Volume2, Maximize, CheckCircle, AlertCircle, Clock, Sparkles, Download, Globe, Wand2 } from 'lucide-react';
+import { Play, Pause, Volume2, Maximize, CheckCircle, AlertCircle, Clock, Sparkles, Download, Globe, Wand2, RotateCcw } from 'lucide-react';
 
-interface ProgressUpdate {
-  step: string;
-  progress: number;
-  message: string;
-  details?: string;
-  timestamp?: number;
+interface RetryInfo {
+  count: number;
+  maxRetries: number;
+  lastError?: string;
+  canRetry: boolean;
 }
 
 interface VideoPlayerProgressIndicatorProps {
@@ -17,10 +16,12 @@ interface VideoPlayerProgressIndicatorProps {
   details?: string;
   timestamp?: number;
   videoPath?: string;
+  retryInfo?: RetryInfo;
   onVideoReady?: (videoPath: string) => void;
   onDownload?: () => void;
   onGoToDashboard?: () => void;
   onCreateAnother?: () => void;
+  onRetry?: () => void;
 }
 
 const VideoPlayerProgressIndicator: React.FC<VideoPlayerProgressIndicatorProps> = ({
@@ -31,10 +32,12 @@ const VideoPlayerProgressIndicator: React.FC<VideoPlayerProgressIndicatorProps> 
   details,
   timestamp,
   videoPath,
+  retryInfo,
   onVideoReady,
   onDownload,
   onGoToDashboard,
-  onCreateAnother
+  onCreateAnother,
+  onRetry
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
@@ -350,12 +353,52 @@ const VideoPlayerProgressIndicator: React.FC<VideoPlayerProgressIndicatorProps> 
         </div>
       )}
 
-      {/* Error State */}
+      {/* Error State with Retry */}
       {hasError && (
-        <div className="mt-4 text-center">
+        <div className="mt-4 text-center space-y-4">
           <div className="inline-flex items-center gap-2 bg-red-500/20 text-red-400 px-4 py-2 rounded-full border border-red-500/30">
             <AlertCircle className="w-5 h-5" />
-            <span className="font-medium">Generation Error - Please try again</span>
+            <span className="font-medium">
+              {(retryInfo?.count ?? 0) > 0 ? `Generation Failed (Attempt ${retryInfo?.count ?? 0}/${retryInfo?.maxRetries ?? 0})` : 'Generation Error'}
+            </span>
+          </div>
+          
+          {retryInfo?.lastError && (
+            <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-3 max-w-md mx-auto">
+              <p className="text-red-300 text-sm">{retryInfo.lastError}</p>
+            </div>
+          )}
+          
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {retryInfo?.canRetry && onRetry && (
+              <button
+                onClick={onRetry}
+                disabled={isProcessing}
+                className="bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>
+                  {isProcessing ? 'Retrying...' : `Retry (${(retryInfo?.maxRetries ?? 0) - (retryInfo?.count ?? 0)} attempts left)`}
+                </span>
+              </button>
+            )}
+            
+            {!retryInfo?.canRetry && (retryInfo?.count ?? 0) >= (retryInfo?.maxRetries ?? 0) && (
+              <div className="text-center">
+                <p className="text-gray-400 text-sm mb-3">
+                  Maximum retry attempts reached. Please try again later or contact support.
+                </p>
+                {onCreateAnother && (
+                  <button
+                    onClick={onCreateAnother}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 mx-auto"
+                  >
+                    <Wand2 className="w-4 h-4" />
+                    <span>Start Over</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

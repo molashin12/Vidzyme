@@ -2,6 +2,106 @@ import { supabase, Video, UserProfile, Subscription, Usage, UserChannel, UserOnb
 
 
 export class DatabaseService {
+  static async getProcessingVideos(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('videos')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'processing')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error fetching processing videos:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  static async updateVideoProgress(videoId: string, progress: number, message?: string) {
+    try {
+      const updates: any = { 
+        processing_progress: progress,
+        updated_at: new Date().toISOString()
+      };
+      
+      if (message) {
+        updates.error_message = message;
+      }
+
+      const { data, error } = await supabase
+        .from('videos')
+        .update(updates)
+        .eq('id', videoId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error updating video progress:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  static async updateVideoStatus(videoId: string, status: 'pending' | 'processing' | 'completed' | 'failed', errorMessage?: string) {
+    try {
+      const updates: any = { 
+        status,
+        updated_at: new Date().toISOString()
+      };
+      
+      if (status === 'completed') {
+        updates.processing_progress = 100;
+      }
+      
+      if (errorMessage) {
+        updates.error_message = errorMessage;
+      }
+
+      const { data, error } = await supabase
+        .from('videos')
+        .update(updates)
+        .eq('id', videoId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error updating video status:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  static async updateVideoCompletion(videoId: string, videoUrl: string, fileSize: number, duration: number, thumbnailUrl?: string) {
+    try {
+      const updates = {
+        status: 'completed' as const,
+        video_url: videoUrl,
+        file_size: fileSize,
+        duration: duration,
+        processing_progress: 100,
+        ...(thumbnailUrl && { thumbnail_url: thumbnailUrl }),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('videos')
+        .update(updates)
+        .eq('id', videoId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error updating video completion:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
   // Video operations
   static async createVideo(videoData: Omit<Video, 'id' | 'created_at' | 'updated_at'>) {
     try {

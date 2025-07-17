@@ -319,6 +319,11 @@ class ScheduledVideoUpdate(BaseModel):
     auto_publish: Optional[bool] = None
     max_executions: Optional[int] = None
 
+class PlatformContentRequest(BaseModel):
+    video_topic: str
+    platforms: List[str]  # e.g., ["youtube", "instagram", "tiktok"]
+    video_id: Optional[str] = None
+
 
 import time
 from utils.gemini import query
@@ -630,6 +635,7 @@ async def generate_shorts(
 async def generate_shorts_post(request: VideoGenerationRequest):
     topic = request.prompt.strip()
     voice_name = request.voice
+    user_id = getattr(request, 'user_id', None)  # Get user_id if provided
     
     if not topic:
         raise HTTPException(status_code=400, detail="prompt cannot be empty")
@@ -637,20 +643,62 @@ async def generate_shorts_post(request: VideoGenerationRequest):
         raise HTTPException(status_code=400, detail="invalid voice_name")
 
     voice_id = VOICE_MAPPING[voice_name]
+    
+    # Create video record in database with 'processing' status
+    video_record = None
+    if user_id:
+        try:
+            video_data = {
+                "user_id": user_id,
+                "title": topic[:100],  # Truncate if too long
+                "prompt": topic,
+                "voice": voice_name,
+                "status": "processing",
+                "processing_progress": 0,
+                "created_at": "now()",
+                "updated_at": "now()"
+            }
+            result = supabase.table("videos").insert(video_data).execute()
+            if result.data:
+                video_record = result.data[0]
+                print(f"Created video record with ID: {video_record['id']}")
+        except Exception as e:
+            print(f"Error creating video record: {e}")
+    
     threading.Thread(
         target=run_pipeline,
-        args=(topic, voice_id),
+        args=(topic, voice_id, video_record),
         daemon=True
     ).start()
 
     broadcast(f"▶️ Starting video creation for topic: '{topic}' with voice '{voice_name}'.")
-    return {"status": "started", "message": "Video generation started"}
+    response_data = {"status": "started", "message": "Video generation started"}
+    if video_record:
+        response_data["video_id"] = video_record["id"]
+    return response_data
 
 
 # ───────────────────────────────────────────────────────────────────────────────
 # Pipeline function with message broadcasting for each stage
 # ───────────────────────────────────────────────────────────────────────────────
-def run_pipeline(topic: str, voice_id: str):
+def run_pipeline(topic: str, voice_id: str, video_record=None):
+    def update_video_progress(progress, status=None, error_message=None):
+        """Update video progress in database"""
+        if video_record:
+            try:
+                update_data = {
+                    "processing_progress": progress,
+                    "updated_at": "now()"
+                }
+                if status:
+                    update_data["status"] = status
+                if error_message:
+                    update_data["error_message"] = error_message
+                
+                supabase.table("videos").update(update_data).eq("id", video_record["id"]).execute()
+            except Exception as e:
+                print(f"Error updating video progress: {e}")
+    
     try:
         from utils.write_script import write_content, split_text_to_lines
         from utils.image_gen import image_main
@@ -658,58 +706,80 @@ def run_pipeline(topic: str, voice_id: str):
         from utils.video_creation import video_main
         
         broadcast_progress("initializing", 0, "Starting video generation...", "Preparing pipeline")
+        update_video_progress(0)
         
         # Generate title (5% progress)
         broadcast_progress("title", 5, "Generating title...", "Creating engaging title for your video")
+        update_video_progress(5)
         raw = query(
             f"Give me 5 YouTube Shorts titles related to the topic '{topic}' separated by commas"
         )["candidates"][0]["content"]["parts"][0]["text"]
         title = [t.strip() for t in raw.replace("،", ",").split(",") if t.strip()][0]
         broadcast_progress("title", 15, "Title generated successfully", f"Title: {title[:50]}...")
+        update_video_progress(15)
+        
+        # Update title in database
+        if video_record:
+            try:
+                supabase.table("videos").update({"title": title}).eq("id", video_record["id"]).execute()
+            except Exception as e:
+                print(f"Error updating video title: {e}")
 
         # Generate content (15-35% progress)
         broadcast_progress("script", 20, "Generating content...", "Creating script based on your topic")
+        update_video_progress(20)
         content = query(
             f"Explain this topic '{title}' briefly in one minute without instructions."
         )["candidates"][0]["content"]["parts"][0]["text"]
         broadcast_progress("script", 35, "Script generated successfully", f"Generated {len(content.split())} words")
+        update_video_progress(35)
 
         # Save content and split into lines (35-40% progress)
         broadcast_progress("script", 38, "Saving content and splitting into lines...", "Preparing script for processing")
+        update_video_progress(38)
         write_content(content)
         split_text_to_lines()
         broadcast_progress("script", 40, "Script saved successfully", "Saved line_by_line.txt")
+        update_video_progress(40)
 
         # Generate images (40-60% progress)
         broadcast_progress("images", 45, "Generating images...", "Creating visual content for your video")
+        update_video_progress(45)
         
         def image_progress_callback(message, progress=None):
             if progress is not None:
                 broadcast_progress("images", progress, message, "Creating visual content for your video")
+                update_video_progress(progress)
             else:
                 broadcast_progress("images", 45, message, "Creating visual content for your video")
         
         image_main(progress_callback=image_progress_callback)
         broadcast_progress("images", 60, "Images generated successfully", "Visual content ready")
+        update_video_progress(60)
 
         # Generate voice (60-80% progress)
         broadcast_progress("voice", 65, "Generating voice...", "Converting text to speech")
+        update_video_progress(65)
         
         def voice_progress_callback(message, progress=None):
             if progress is not None:
                 broadcast_progress("voice", progress, message, "Converting text to speech")
+                update_video_progress(progress)
             else:
                 broadcast_progress("voice", 65, message, "Converting text to speech")
         
         voice_main(voice_id, progress_callback=voice_progress_callback)
         broadcast_progress("voice", 80, "Voice generated successfully", "Audio narration ready")
+        update_video_progress(80)
 
         # Create video (80-100% progress)
         broadcast_progress("video", 85, "Creating video...", "Combining images, voice, and effects")
+        update_video_progress(85)
         
         def video_progress_callback(message, progress=None):
             if progress is not None:
                 broadcast_progress("video", progress, message, "Combining images, voice, and effects")
+                update_video_progress(progress)
             else:
                 broadcast_progress("video", 85, message, "Combining images, voice, and effects")
         
@@ -720,6 +790,7 @@ def run_pipeline(topic: str, voice_id: str):
             progress_callback=video_progress_callback
         )
         broadcast_progress("video", 95, "Finalizing video...", "Adding final touches")
+        update_video_progress(95)
         
         # Check if video was created successfully and broadcast completion with preview info
         if video_info and video_info.get("success"):
@@ -733,6 +804,23 @@ def run_pipeline(topic: str, voice_id: str):
             }
             broadcast_progress("completed", 100, "✅ Video generation completed!", 
                              f"Video ready for preview ({video_info['file_size_mb']} MB)")
+            
+            # Update video record with completion data
+            if video_record:
+                try:
+                    update_data = {
+                        "status": "completed",
+                        "processing_progress": 100,
+                        "video_url": f"/outputs/{video_info['filename']}",
+                        "file_size": video_info.get('file_size', 0),
+                        "duration": video_info.get('duration', 0),
+                        "updated_at": "now()"
+                    }
+                    supabase.table("videos").update(update_data).eq("id", video_record["id"]).execute()
+                    print(f"Updated video record {video_record['id']} with completion data")
+                except Exception as e:
+                    print(f"Error updating video completion: {e}")
+            
             # Send additional completion data
             import json
             broadcast(json.dumps({
@@ -747,6 +835,7 @@ def run_pipeline(topic: str, voice_id: str):
             if os.path.exists(video_path):
                 file_stats = os.stat(video_path)
                 file_size_mb = round(file_stats.st_size / (1024 * 1024), 2)
+                file_size_bytes = file_stats.st_size
                 completion_message = {
                     "message": "✅ Video generation completed!",
                     "video_url": "/outputs/youtube_short.mp4",
@@ -754,6 +843,22 @@ def run_pipeline(topic: str, voice_id: str):
                     "preview_available": True
                 }
                 broadcast_progress("completed", 100, "✅ Video generation completed!", f"Video ready for preview ({file_size_mb} MB)")
+                
+                # Update video record with legacy completion data
+                if video_record:
+                    try:
+                        update_data = {
+                            "status": "completed",
+                            "processing_progress": 100,
+                            "video_url": "/outputs/youtube_short.mp4",
+                            "file_size": file_size_bytes,
+                            "updated_at": "now()"
+                        }
+                        supabase.table("videos").update(update_data).eq("id", video_record["id"]).execute()
+                        print(f"Updated video record {video_record['id']} with legacy completion data")
+                    except Exception as e:
+                        print(f"Error updating video completion: {e}")
+                
                 import json
                 broadcast(json.dumps({
                     "step": "video_ready",
@@ -763,9 +868,153 @@ def run_pipeline(topic: str, voice_id: str):
                 }))
             else:
                 broadcast_progress("completed", 100, "✅ Video generation completed!", "Video generation finished")
+                update_video_progress(100, "completed")
 
     except Exception as e:
-        broadcast_progress("error", 0, f"❌ Error during processing: {e}", "Video generation failed")
+        error_message = f"❌ Error during processing: {e}"
+        broadcast_progress("error", 0, error_message, "Video generation failed")
+        update_video_progress(0, "failed", str(e))
+
+
+# ───────────────────────────────────────────────────────────────────────────────
+# PLATFORM CONTENT GENERATION API ENDPOINT
+# ───────────────────────────────────────────────────────────────────────────────
+
+@app.post("/api/generate-platform-content")
+async def generate_platform_content(request: PlatformContentRequest):
+    """Generate platform-specific content for multiple platforms in a single request"""
+    try:
+        video_topic = request.video_topic.strip()
+        platforms = request.platforms
+        
+        if not video_topic:
+            raise HTTPException(status_code=400, detail="video_topic cannot be empty")
+        
+        if not platforms:
+            raise HTTPException(status_code=400, detail="platforms list cannot be empty")
+        
+        # Validate platforms
+        valid_platforms = {"youtube", "instagram", "tiktok"}
+        invalid_platforms = [p for p in platforms if p.lower() not in valid_platforms]
+        if invalid_platforms:
+            raise HTTPException(status_code=400, detail=f"Invalid platforms: {invalid_platforms}")
+        
+        # Normalize platform names
+        platforms = [p.lower() for p in platforms]
+        
+        # Generate content for all platforms in a single AI request
+        platform_content = {}
+        
+        # Create a comprehensive prompt for all platforms at once
+        platform_prompts = []
+        if "youtube" in platforms:
+            platform_prompts.append("""
+YouTube Content:
+- Title: Create an engaging, SEO-optimized title (60 characters max)
+- Description: Write a compelling description (150-200 words) with relevant hashtags
+- Tags: Provide 10-15 relevant tags separated by commas
+""")
+        
+        if "instagram" in platforms:
+            platform_prompts.append("""
+Instagram Content:
+- Caption: Create an engaging caption (125 words max) with relevant hashtags and emojis
+""")
+        
+        if "tiktok" in platforms:
+            platform_prompts.append("""
+TikTok Content:
+- Caption: Create a catchy, trend-focused caption (100 words max) with popular hashtags and emojis
+""")
+        
+        combined_prompt = f"""
+Generate platform-specific content for the video topic: "{video_topic}"
+
+Please provide content for the following platforms:
+{''.join(platform_prompts)}
+
+Format your response as JSON with the following structure:
+{{
+    "youtube": {{
+        "title": "...",
+        "description": "...",
+        "tags": "..."
+    }},
+    "instagram": {{
+        "caption": "..."
+    }},
+    "tiktok": {{
+        "caption": "..."
+    }}
+}}
+
+Only include platforms that were requested. Make sure the content is optimized for each platform's audience and format requirements.
+"""
+        
+        # Make a single AI request for all platforms
+        try:
+            ai_response = query(combined_prompt)
+            response_text = ai_response["candidates"][0]["content"]["parts"][0]["text"]
+            
+            # Try to parse JSON response
+            import json
+            import re
+            
+            # Extract JSON from the response (in case there's extra text)
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                json_str = json_match.group()
+                platform_content = json.loads(json_str)
+            else:
+                # Fallback: parse manually if JSON extraction fails
+                raise ValueError("Could not extract JSON from AI response")
+                
+        except (json.JSONDecodeError, ValueError, KeyError) as e:
+            # Fallback: Generate content individually if combined approach fails
+            print(f"Combined generation failed, falling back to individual generation: {e}")
+            
+            for platform in platforms:
+                if platform == "youtube":
+                    title_response = query(f"Create an engaging YouTube Shorts title for: {video_topic} (60 characters max)")
+                    desc_response = query(f"Write a compelling YouTube Shorts description for: {video_topic} (150-200 words with hashtags)")
+                    tags_response = query(f"Provide 10-15 relevant YouTube tags for: {video_topic} (separated by commas)")
+                    
+                    platform_content["youtube"] = {
+                        "title": title_response["candidates"][0]["content"]["parts"][0]["text"].strip(),
+                        "description": desc_response["candidates"][0]["content"]["parts"][0]["text"].strip(),
+                        "tags": tags_response["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    }
+                    
+                elif platform == "instagram":
+                    caption_response = query(f"Create an engaging Instagram caption for: {video_topic} (125 words max with hashtags and emojis)")
+                    platform_content["instagram"] = {
+                        "caption": caption_response["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    }
+                    
+                elif platform == "tiktok":
+                    caption_response = query(f"Create a catchy TikTok caption for: {video_topic} (100 words max with trending hashtags and emojis)")
+                    platform_content["tiktok"] = {
+                        "caption": caption_response["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    }
+        
+        # Filter content to only include requested platforms
+        filtered_content = {platform: platform_content.get(platform, {}) for platform in platforms if platform in platform_content}
+        
+        return {
+            "success": True,
+            "data": {
+                "video_topic": video_topic,
+                "platforms": platforms,
+                "content": filtered_content,
+                "generated_at": datetime.now().isoformat()
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error generating platform content: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate platform content: {str(e)}")
 
 
 # ───────────────────────────────────────────────────────────────────────────────

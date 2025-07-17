@@ -1,63 +1,73 @@
-# Frontend Architecture Documentation
+# Vidzyme Frontend Architecture
 
-## 🎨 React SaaS Frontend Overview
+## Overview
 
-The Vidzyme frontend is a modern React-based SaaS application built with TypeScript, Vite, and Tailwind CSS. It provides a comprehensive user interface for AI-powered video generation with authentication, dashboard management, and real-time progress tracking.
+The Vidzyme frontend is a modern React-based SaaS application built with TypeScript, Vite, and Tailwind CSS. It provides a comprehensive user interface for AI-powered video generation, channel management, subscription handling, and user onboarding.
 
-## 🏗️ Technology Stack
+## Technology Stack
 
 ### Core Technologies
-- **React 18**: Modern React with hooks and functional components
-- **TypeScript**: Type-safe development
+- **React 18**: Component-based UI framework with hooks
+- **TypeScript**: Type-safe JavaScript development
 - **Vite**: Fast build tool and development server
 - **Tailwind CSS**: Utility-first CSS framework
+
+### UI Components & Icons
 - **Lucide React**: Modern icon library
+- **Heroicons**: Additional icon set for enhanced UI
+- **Custom Components**: Reusable UI component library
+
+### State Management & Data
+- **React Context**: Global state management
+- **Custom Hooks**: Reusable stateful logic
+- **Supabase Client**: Database and authentication integration
 
 ### Development Tools
-```json
-{
-  "@vitejs/plugin-react": "^4.3.1",
-  "typescript": "^5.5.3",
-  "eslint": "^9.9.0",
-  "tailwindcss": "^3.4.1",
-  "autoprefixer": "^10.4.18",
-  "postcss": "^8.4.35"
+- **ESLint**: Code linting and quality
+- **PostCSS**: CSS processing
+- **Autoprefixer**: CSS vendor prefixing
+
+## Application Architecture
+
+### State Management
+The application uses React Context for global state management:
+
+```typescript
+// Authentication Context
+interface AuthContextType {
+  user: User | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  loading: boolean;
+}
+
+// Onboarding Context
+interface OnboardingContextType {
+  isOnboardingComplete: boolean;
+  updateOnboardingStatus: (completed: boolean) => Promise<void>;
+  checkOnboardingStatus: () => Promise<boolean>;
 }
 ```
 
-## 📱 Application Architecture
+### Navigation & Routing
+- **React Router**: Client-side routing
+- **Protected Routes**: Authentication-based access control
+- **Dynamic Navigation**: Context-aware menu items
 
-### Main Application (`App.tsx`)
-
-#### State Management
+### Page Rendering Logic
 ```typescript
-const [currentPage, setCurrentPage] = useState<string>('landing');
-const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-const [user, setUser] = useState<any>(null);
-```
+const App = () => {
+  const { user, loading } = useAuth();
+  const { isOnboardingComplete } = useOnboarding();
 
-#### Navigation System
-The application uses a centralized navigation system with page-based routing:
-
-```typescript
-const navigate = (page: string) => {
-  setCurrentPage(page);
-};
-```
-
-#### Page Rendering Logic
-```typescript
-const renderPage = () => {
-  if (!isAuthenticated && currentPage !== 'landing' && currentPage !== 'signin' && currentPage !== 'signup') {
-    return <SignIn onNavigate={navigate} onAuth={handleAuth} />;
-  }
+  if (loading) return <LoadingSpinner />;
   
-  switch (currentPage) {
-    case 'landing': return <LandingPage onNavigate={navigate} />;
-    case 'dashboard': return <Dashboard onNavigate={navigate} user={user} />;
-    case 'generator': return <VideoGenerator onNavigate={navigate} />;
-    // ... other cases
-  }
+  if (!user) return <LandingPage />;
+  
+  if (!isOnboardingComplete) return <OnboardingFlow />;
+  
+  return <Dashboard />;
 };
 ```
 

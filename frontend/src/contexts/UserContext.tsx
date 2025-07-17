@@ -239,6 +239,40 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         } catch (statsError) {
           console.warn('Could not load user stats:', statsError);
         }
+
+        // Load connected accounts from user channels platforms
+        try {
+          const channelsResponse = await DatabaseService.getUserChannels(authUser.id);
+          if (channelsResponse.success && channelsResponse.data && channelsResponse.data.length > 0) {
+            // Get the primary channel or first channel
+            const primaryChannel = channelsResponse.data.find(ch => ch.is_primary) || channelsResponse.data[0];
+            
+            if (primaryChannel && primaryChannel.platforms) {
+              // Update connected accounts based on platforms array
+              const newConnectedAccounts: ConnectedAccounts = {
+                youtube: { 
+                  connected: primaryChannel.platforms.includes('youtube'), 
+                  username: primaryChannel.platforms.includes('youtube') ? primaryChannel.channel_name : '' 
+                },
+                instagram: { 
+                  connected: primaryChannel.platforms.includes('instagram'), 
+                  username: primaryChannel.platforms.includes('instagram') ? primaryChannel.channel_name : '' 
+                },
+                tiktok: { 
+                  connected: primaryChannel.platforms.includes('tiktok'), 
+                  username: primaryChannel.platforms.includes('tiktok') ? primaryChannel.channel_name : '' 
+                },
+                linkedin: { 
+                  connected: primaryChannel.platforms.includes('linkedin'), 
+                  username: primaryChannel.platforms.includes('linkedin') ? primaryChannel.channel_name : '' 
+                }
+              };
+              setConnectedAccounts(newConnectedAccounts);
+            }
+          }
+        } catch (channelsError) {
+          console.warn('Could not load user channels for connected accounts:', channelsError);
+        }
         
       } catch (error) {
         console.error('Error loading user data:', error);
@@ -309,14 +343,32 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     setConnectedAccounts(prev => ({ ...prev, [platform]: data }));
     
     try {
-      // Update social links in user_profiles table
-      const socialLinks = { [platform]: data.connected ? data.username : '' };
-      const response = await DatabaseService.updateUserProfile(authUser.id, {
-        social_links: socialLinks
-      });
-      
-      if (!response.success) {
-        throw new Error(response.error);
+      // Get the user's primary channel
+      const channelsResponse = await DatabaseService.getUserChannels(authUser.id);
+      if (channelsResponse.success && channelsResponse.data && channelsResponse.data.length > 0) {
+        const primaryChannel = channelsResponse.data.find(ch => ch.is_primary) || channelsResponse.data[0];
+        
+        if (primaryChannel) {
+          // Update platforms array based on the new connected account
+          const updatedConnectedAccounts = { ...previousConnectedAccounts, [platform]: data };
+          const platforms: string[] = [];
+          Object.entries(updatedConnectedAccounts).forEach(([platformKey, account]) => {
+            if (account?.connected) {
+              platforms.push(platformKey);
+            }
+          });
+          
+          // Update the channel with new platforms
+          const response = await DatabaseService.updateUserChannel(primaryChannel.id, {
+            platforms: platforms,
+            // Also update channel_type to the first platform for backward compatibility
+            channel_type: (platforms[0] as 'youtube' | 'instagram' | 'tiktok' | 'linkedin' | 'other') || 'youtube'
+          });
+          
+          if (!response.success) {
+            throw new Error(response.error);
+          }
+        }
       }
     } catch (error) {
       console.error('Error updating connected account:', error);
@@ -332,20 +384,31 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     setConnectedAccounts(accounts);
     
     try {
-      // Convert connected accounts to social links format
-      const socialLinks: Record<string, string> = {};
-      Object.entries(accounts).forEach(([platform, account]) => {
-        if (account?.connected) {
-          socialLinks[platform] = account.username;
+      // Get the user's primary channel
+      const channelsResponse = await DatabaseService.getUserChannels(authUser.id);
+      if (channelsResponse.success && channelsResponse.data && channelsResponse.data.length > 0) {
+        const primaryChannel = channelsResponse.data.find(ch => ch.is_primary) || channelsResponse.data[0];
+        
+        if (primaryChannel) {
+          // Convert connected accounts to platforms array
+          const platforms: string[] = [];
+          Object.entries(accounts).forEach(([platform, account]) => {
+            if (account?.connected) {
+              platforms.push(platform);
+            }
+          });
+          
+          // Update the channel with new platforms
+          const response = await DatabaseService.updateUserChannel(primaryChannel.id, {
+            platforms: platforms,
+            // Also update channel_type to the first platform for backward compatibility
+            channel_type: (platforms[0] as 'youtube' | 'instagram' | 'tiktok' | 'linkedin' | 'other') || 'youtube'
+          });
+          
+          if (!response.success) {
+            throw new Error(response.error);
+          }
         }
-      });
-      
-      const response = await DatabaseService.updateUserProfile(authUser.id, {
-        social_links: socialLinks
-      });
-      
-      if (!response.success) {
-        throw new Error(response.error);
       }
     } catch (error) {
       console.error('Error updating connected accounts:', error);

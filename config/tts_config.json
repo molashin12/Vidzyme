@@ -1,0 +1,55 @@
+{
+  "providers": {
+    "elevenlabs": {
+      "enabled": true,
+      "api_key_file": "voice_secret.txt",
+      "priority": 1,
+      "cost_per_character": 0.00018,
+      "quality": "high",
+      "max_characters": 5000
+    },
+    "gemini": {
+      "enabled": true,
+      "api_key_file": "gemini_secret.txt",
+      "priority": 2,
+      "cost_per_character": 0.000016,
+      "quality": "standard",
+      "max_characters": 5000
+    }
+  },
+  "voice_mappings": {
+    "default": {
+      "elevenlabs": "Rachel",
+      "gemini": "en-US-Journey-D"
+    },
+    "male": {
+      "elevenlabs": "Adam",
+      "gemini": "en-US-Journey-D"
+    },
+    "female": {
+      "elevenlabs": "Rachel",
+      "gemini": "en-US-Journey-F"
+    },
+    "narrator": {
+      "elevenlabs": "Onyx",
+      "gemini": "en-US-Journey-O"
+    }
+  },
+  "default_settings": {
+    "voice": "default",
+    "speed": 1.0,
+    "pitch": 1.0,
+    "stability": 0.5,
+    "similarity_boost": 0.5,
+    "style": 0.0,
+    "use_speaker_boost": true
+  },
+  "primary_provider": "elevenlabs",
+  "quality_preference": "high",
+  "cost_threshold": 0.10,
+  "auto_fallback": true,
+  "max_retries": 3,
+  "timeout": 30,
+  "cache_enabled": true,
+  "cache_duration": 3600
+}
