@@ -119,6 +119,7 @@ The application uses Supabase for:
 - **AI-Powered**: Google Gemini for script generation
 - **Voice Selection**: Multiple voice options via ElevenLabs
 - **Real-time Progress**: Live updates during video generation
+- **Automatic Thumbnails**: AI-generated thumbnails with fallback support
 - **Error Handling**: Comprehensive error display and retry options
 - **Scheduled Generation**: Automated video creation on custom schedules
 
@@ -164,10 +165,27 @@ Vidzyme/
 │   ├── gemini.py               # AI text generation
 │   ├── image_gen.py            # Image generation
 │   ├── voice_gen.py            # Voice synthesis
-│   └── video_creation.py       # Video assembly
+│   ├── video_creation.py       # Video assembly
+│   ├── tts/                    # Text-to-speech utilities
+│   │   ├── elevenlabs_tts.py   # ElevenLabs integration
+│   │   └── gemini_tts.py       # Gemini TTS integration
+│   └── thumbnail_backfill.py   # Thumbnail generation utility
+├── config/                      # Configuration files
+│   ├── database.py             # Database configuration
+│   └── settings.py             # Application settings
+├── migrations/                  # Database migrations
+│   └── thumbnail_optimization.sql # Thumbnail optimization migration
+├── outputs/                     # Generated content
+│   ├── videos/                 # Generated videos
+│   └── thumbnails/             # Generated thumbnails
+├── logs/                        # Application logs
 ├── veo3/                        # Alternative Veo-3 implementation
-├── outputs/                     # Generated videos
 ├── docs/                        # Documentation
+│   ├── API_DOCUMENTATION.md    # API reference
+│   ├── BACKEND_ARCHITECTURE.md # Backend architecture
+│   ├── DEVELOPMENT_GUIDE.md    # Development guide
+│   ├── PROJECT_OVERVIEW.md     # Project overview
+│   └── README.md               # Documentation index
 ├── server.py                    # FastAPI application
 ├── scheduler.py                 # Video scheduling system
 ├── requirements.txt             # Backend dependencies
@@ -178,7 +196,6 @@ Vidzyme/
 ├── PLATFORMS_MIGRATION_README.md # Migration guide
 ├── SETUP_GUIDE.md              # This setup guide
 └── README.md                   # Project documentation
-
 ```
 
 ## Usage
@@ -227,6 +244,14 @@ Vidzyme/
   2. Verify FFmpeg and ImageMagick installation
   3. Check available disk space
   4. Review backend logs for detailed errors
+
+#### Thumbnail Generation Issues
+- **Symptom**: Missing thumbnails or thumbnail generation failures
+- **Solution**:
+  1. Verify FFmpeg is properly installed and accessible
+  2. Check outputs/thumbnails directory permissions
+  3. Run thumbnail backfill utility: `python utils/thumbnail_backfill.py`
+  4. Check database thumbnail_url column for proper URLs
 
 #### Platform Selection Issues
 - **Symptom**: Invalid platform errors

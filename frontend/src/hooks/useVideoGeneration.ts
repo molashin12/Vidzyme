@@ -39,7 +39,99 @@ export const useVideoGeneration = (userId?: string) => {
   });
   const [lastGenerationData, setLastGenerationData] = useState<VideoGenerationData | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
+  const taskPollingRef = useRef<NodeJS.Timeout | null>(null);
   const realtimeSubscriptionRef = useRef<any>(null);
+
+  // Fetch video URL function - moved before usage
+  const fetchVideoUrl = useCallback(async () => {
+    try {
+      const response = await fetch('/api/video-preview');
+      const data = await response.json();
+      if (data.exists && data.video_url) {
+        setVideoUrl(data.video_url);
+      } else {
+        console.log('No video available yet');
+      }
+    } catch (error) {
+      console.error('Failed to fetch video URL:', error);
+    }
+  }, []);
+
+  // Poll task status for queue-based generation
+  const pollTaskStatus = useCallback(async (taskId: string) => {
+    setCurrentTaskId(taskId);
+    
+    const poll = async () => {
+      try {
+        const response = await fetch(`/api/queue/tasks/${taskId}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        if (result.success && result.data) {
+          const task = result.data;
+          
+          // Update progress based on task status
+          switch (task.status) {
+            case 'pending':
+              setProgress({
+                step: 'queued',
+                progress: 5,
+                message: 'Waiting in queue...',
+                timestamp: Date.now()
+              });
+              break;
+            case 'processing':
+              setProgress({
+                step: 'processing',
+                progress: task.progress || 10,
+                message: 'Processing video...',
+                timestamp: Date.now()
+              });
+              break;
+            case 'completed':
+              setProgress({
+                step: 'completed',
+                progress: 100,
+                message: 'Video generation completed!',
+                timestamp: Date.now()
+              });
+              setIsGenerating(false);
+              setCurrentTaskId(null);
+              if (taskPollingRef.current) {
+                clearInterval(taskPollingRef.current);
+                taskPollingRef.current = null;
+              }
+              fetchVideoUrl();
+              return; // Stop polling
+            case 'failed':
+              setError(task.error_message || 'Video generation failed');
+              setIsGenerating(false);
+              setCurrentTaskId(null);
+              if (taskPollingRef.current) {
+                clearInterval(taskPollingRef.current);
+                taskPollingRef.current = null;
+              }
+              return; // Stop polling
+          }
+          
+          // Continue polling if task is still pending or processing
+          if (task.status === 'pending' || task.status === 'processing') {
+            taskPollingRef.current = setTimeout(poll, 2000); // Poll every 2 seconds
+          }
+        }
+      } catch (error) {
+        console.error('Error polling task status:', error);
+        // Continue polling on error, but with longer interval
+        taskPollingRef.current = setTimeout(poll, 5000);
+      }
+    };
+    
+    // Start polling
+    poll();
+  }, [fetchVideoUrl]);
 
   // Check for ongoing video generation on mount
   useEffect(() => {
@@ -157,7 +249,7 @@ export const useVideoGeneration = (userId?: string) => {
           }));
         }
       },
-      (error) => {
+      () => {
         console.log('Progress stream connection failed (expected if no active generation)');
       }
     );
@@ -171,6 +263,7 @@ export const useVideoGeneration = (userId?: string) => {
     setError(null);
     setVideoUrl(null);
     setCurrentVideoId(null);
+    setCurrentTaskId(null);
     setRetryInfo({
       count: 0,
       maxRetries: 3,
@@ -184,6 +277,11 @@ export const useVideoGeneration = (userId?: string) => {
       eventSourceRef.current = null;
     }
     
+    if (taskPollingRef.current) {
+      clearTimeout(taskPollingRef.current);
+      taskPollingRef.current = null;
+    }
+    
     if (realtimeSubscriptionRef.current) {
       realtimeSubscriptionRef.current.unsubscribe();
       realtimeSubscriptionRef.current = null;
@@ -192,25 +290,15 @@ export const useVideoGeneration = (userId?: string) => {
 
   const resetState = resetGeneration; // Alias for backward compatibility
 
-  const fetchVideoUrl = useCallback(async () => {
-    try {
-      const response = await fetch('/api/video-preview');
-      const data = await response.json();
-      if (data.exists && data.video_url) {
-        setVideoUrl(data.video_url);
-      } else {
-        setVideoUrl('/outputs/youtube_short.mp4'); // Fallback
-      }
-    } catch (error) {
-      console.error('Failed to fetch video URL:', error);
-      setVideoUrl('/outputs/youtube_short.mp4'); // Fallback
-    }
-  }, []);
-
   const generateVideo = useCallback(async (data: VideoGenerationData, isRetry: boolean = false): Promise<VideoGenerationResponse> => {
     setIsGenerating(true);
     setError(null);
-    setProgress(null);
+    setProgress({
+      step: 'queuing',
+      progress: 0,
+      message: 'Adding video to generation queue...',
+      timestamp: Date.now()
+    });
     setVideoUrl(null);
     setCurrentVideoId(null);
     
@@ -230,10 +318,23 @@ export const useVideoGeneration = (userId?: string) => {
       // Start the generation process
       const result = await apiClient.generateVideo(data as VideoGenerationRequest);
       
-      // Store the video ID for tracking
+      // Store the video ID and task ID for tracking
       if (result.video_id) {
         setCurrentVideoId(result.video_id);
         setupVideoSubscription(result.video_id);
+      }
+      
+      // If we get a task_id, it means the video was queued
+      if (result.task_id) {
+        setProgress({
+          step: 'queued',
+          progress: 5,
+          message: 'Video queued for generation. Waiting for processing...',
+          timestamp: Date.now()
+        });
+        
+        // Start polling for task status
+        pollTaskStatus(result.task_id);
       }
       
       // Listen for progress updates
@@ -331,6 +432,7 @@ export const useVideoGeneration = (userId?: string) => {
     error,
     videoUrl,
     currentVideoId,
+    currentTaskId,
     retryInfo,
     generateVideo,
     retryGeneration,

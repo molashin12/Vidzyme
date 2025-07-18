@@ -1,6 +1,6 @@
 # Vidzyme - AI Video Generation SaaS Platform
 
-Vidzyme is a comprehensive AI-powered video generation SaaS platform that enables users to create engaging videos automatically with advanced features including user authentication, subscription management, channel management, scheduled generation, and multi-platform publishing.
+Vidzyme is a comprehensive AI-powered video generation SaaS platform that enables users to create engaging videos automatically with advanced features including user authentication, subscription management, channel management, scheduled generation, real video thumbnails, and multi-platform publishing.
 
 ## 🚀 Project Overview
 
@@ -14,24 +14,28 @@ Vidzyme is a comprehensive AI-powered video generation SaaS platform that enable
 - Channel management and settings
 - Subscription management with multiple tiers
 - Real-time video generation progress tracking
+- Enhanced video player with thumbnail previews
 
 ### 🔧 **Backend (FastAPI + Python)**
 - FastAPI-based API with comprehensive endpoints
 - AI-powered video generation pipeline using Google Gemini
-- Advanced TTS system with multiple voice options
+- Advanced TTS system with multiple voice providers (ElevenLabs, Gemini TTS)
 - Image generation with Pollinations API
 - Video assembly with MoviePy, FFmpeg, and ImageMagick
+- Automatic thumbnail generation and storage
 - Queue management system for video processing
 - Scheduled video generation with APScheduler
 - Real-time progress streaming via Server-Sent Events (SSE)
+- File management with automatic cleanup
 
 ### 🗄️ **Database (Supabase + PostgreSQL)**
 - User management with Row Level Security (RLS)
-- Video history and analytics
+- Video history and analytics with thumbnail URLs
 - Channel and subscription management
 - Video queue processing
 - Scheduled video generation
 - User onboarding tracking
+- Optimized database indexes for performance
 
 Ideal for content creators, marketers, and businesses looking to automate video content creation for YouTube Shorts, social media clips, and marketing materials.
 
@@ -40,11 +44,13 @@ Ideal for content creators, marketers, and businesses looking to automate video 
 ### 🎥 **Video Generation**
 - **AI-Powered Script Writing** with Google Gemini 1.5 Flash
 - **Advanced Image Generation** with Pollinations API
-- **Professional TTS** with multiple voice options and languages
+- **Professional TTS** with multiple voice providers (ElevenLabs, Gemini TTS)
 - **Dynamic Video Composition** using MoviePy, FFmpeg, and ImageMagick
+- **Automatic Thumbnail Generation** from video frames with resizing and optimization
 - **Real-time Progress Tracking** via Server-Sent Events (SSE)
 - **Queue-based Processing** for efficient resource management
 - **Custom Video Templates** and styling options
+- **File Management** with automatic cleanup and storage optimization
 
 ### 👤 **User Management**
 - **Secure Authentication** with Supabase Auth
@@ -82,12 +88,14 @@ Ideal for content creators, marketers, and businesses looking to automate video 
 - **Flexible Upgrade/Downgrade** options
 
 ### 🛠️ **Advanced Features**
-- **Real-time Video Player** with custom controls
+- **Real-time Video Player** with custom controls and thumbnail previews
 - **Video History Management** with search and filtering
+- **Thumbnail Management** with automatic generation and database storage
 - **Download and Sharing** capabilities
 - **Performance Analytics** and insights
 - **Error Handling** and retry mechanisms
 - **Responsive Design** for all devices
+- **Database Optimization** with proper indexing and performance tuning
 
 ## 🛠️ Tech Stack
 
@@ -106,15 +114,20 @@ Ideal for content creators, marketers, and businesses looking to automate video 
 - **APScheduler** for automated video scheduling
 - **Threading** for concurrent video processing
 - **Server-Sent Events (SSE)** for real-time updates
+- **Advanced Queue Management** with persistence and priority handling
+- **File Management System** with automatic cleanup and optimization
 
 ### **AI & Media Processing**
 - **Google Gemini 1.5 Flash** for AI script generation
 - **Pollinations API** for AI image generation
-- **Advanced TTS System** with multiple voice options
+- **Advanced TTS System** with multiple providers:
+  - **ElevenLabs** for high-quality voice synthesis
+  - **Gemini TTS** for integrated Google voice generation
 - **MoviePy** for video composition and editing
 - **FFmpeg** for video processing and encoding
 - **ImageMagick** for image manipulation
 - **Pillow (PIL)** for Python image processing
+- **Automatic Thumbnail Generation** with frame extraction and resizing
 
 ### **Database & Authentication**
 - **Supabase** (PostgreSQL) for database management
@@ -122,6 +135,8 @@ Ideal for content creators, marketers, and businesses looking to automate video 
 - **Real-time Subscriptions** for live data updates
 - **Supabase Auth** for secure user authentication
 - **Custom Database Functions** and triggers
+- **Optimized Indexes** for thumbnail and video queries
+- **Database Migration Scripts** for schema updates
 
 ### **Development & Deployment**
 - **TypeScript** for type safety across the stack
@@ -129,16 +144,18 @@ Ideal for content creators, marketers, and businesses looking to automate video 
 - **PostCSS & Autoprefixer** for CSS processing
 - **Git** for version control
 - **Environment Variables** for secure configuration
+- **Utility Scripts** for maintenance and backfill operations
 
 ### **Database Schema**
 - **Users & Profiles** - User management and preferences
-- **Video Management** - Video history, analytics, and metadata
+- **Video Management** - Video history, analytics, metadata, and thumbnail URLs
 - **Channel Management** - Multi-channel support and settings
 - **Scheduled Videos** - Automated generation scheduling
 - **Video Queue** - Processing queue management
 - **Subscriptions** - Billing and usage tracking
 - **User Onboarding** - Onboarding flow tracking
 - **Platforms** - Multi-platform publishing support
+- **Thumbnail Management** - Optimized thumbnail storage and retrieval
 
 ## ⚙️ Prerequisites
 
@@ -335,22 +352,52 @@ Vidzyme/
 ├── utils/                       # Backend utility functions
 │   ├── gemini.py               # Google Gemini integration
 │   ├── image_gen.py            # Image generation
-│   ├── video_creation.py       # Video assembly
+│   ├── video_creation.py       # Video assembly with thumbnail generation
 │   ├── voice_gen.py            # Voice generation
-│   └── write_script.py         # Script writing
+│   ├── write_script.py         # Script writing
+│   ├── file_manager.py         # File management and cleanup
+│   ├── queue_manager.py        # Queue processing management
+│   ├── thumbnail_backfill.py   # Thumbnail utility for existing videos
+│   └── tts/                    # Advanced TTS system
+│       ├── base_provider.py    # TTS provider interface
+│       ├── elevenlabs_provider.py # ElevenLabs integration
+│       ├── gemini_tts_provider.py # Gemini TTS integration
+│       └── tts_factory.py      # TTS provider factory
 ├── veo3/                       # Alternative Veo-3 implementation
+├── config/                     # Configuration files
+│   ├── queue_config.json       # Queue management settings
+│   ├── storage_config.json     # Storage configuration
+│   └── tts_config.json         # TTS system configuration
+├── migrations/                 # Database migration scripts
+│   └── thumbnail_optimization.sql # Thumbnail database optimizations
 ├── outputs/                    # Generated content storage
 │   ├── audio/                  # Generated audio files
-│   └── images/                 # Generated images
-├── docs/                       # Documentation
+│   ├── images/                 # Generated images
+│   ├── videos/                 # Generated video files
+│   └── thumbnails/             # Generated video thumbnails
+├── logs/                       # Application logs
+├── docs/                       # Comprehensive documentation
+│   ├── README.md               # Documentation overview
+│   ├── PROJECT_OVERVIEW.md     # Project architecture
+│   ├── BACKEND_ARCHITECTURE.md # Backend design
+│   ├── FRONTEND_ARCHITECTURE.md # Frontend design
+│   ├── API_DOCUMENTATION.md    # API reference
+│   ├── DEVELOPMENT_GUIDE.md    # Development workflow
+│   ├── DEPLOYMENT_GUIDE.md     # Deployment instructions
+│   └── FILE_MANAGEMENT.md      # File management guide
 ├── server.py                   # Main FastAPI server
 ├── scheduler.py                # Video scheduling system
 ├── requirements.txt            # Python dependencies
+├── package.json                # Node.js dependencies
 ├── supabase-schema.sql         # Main database schema
 ├── schema-extensions.sql       # Extended schema for new features
 ├── schema-migration-platforms.sql # Multi-platform migration
-├── PLATFORMS_MIGRATION_README.md  # Migration guide
-└── README.md
+├── SETUP_GUIDE.md              # Complete setup instructions
+├── TTS_SYSTEM_README.md        # TTS system documentation
+├── PLATFORMS_MIGRATION_README.md # Migration guide
+├── GOOGLE_AUTH_SETUP.md        # Google authentication setup
+├── SUPABASE_SETUP_GUIDE.md     # Supabase configuration
+└── README.md                   # This file
 ```
 
 ## 🔧 Key Features Implementation

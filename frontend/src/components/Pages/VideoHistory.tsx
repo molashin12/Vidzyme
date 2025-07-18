@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Play, Download, Share2, MoreVertical, Edit, Trash2, Eye, Calendar, Filter, Search } from 'lucide-react';
 import { DatabaseService } from '../../services/database';
 import { useAuth } from '../../hooks/useAuth';
+import { useUser } from '../../contexts/UserContext';
 import { Video } from '../../config/supabase';
 import VideoPlayerModal from '../Modals/VideoPlayerModal';
 
@@ -24,6 +25,7 @@ export default function VideoHistory({ onNavigate }: VideoHistoryProps) {
   const [error, setError] = useState<string | null>(null);
   const [playingVideo, setPlayingVideo] = useState<VideoWithStats | null>(null);
   const { user } = useAuth();
+  const { refreshUsage } = useUser();
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -77,6 +79,8 @@ export default function VideoHistory({ onNavigate }: VideoHistoryProps) {
          const result = await DatabaseService.deleteVideo(videoId);
          if (result.success) {
            setVideos(videos.filter(v => v.id !== videoId));
+           // Refresh usage to update dashboard counts
+           await refreshUsage();
          } else {
            alert('Failed to delete video: ' + result.error);
          }

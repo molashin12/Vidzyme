@@ -22,6 +22,36 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Get projec
 font_path = os.path.join(BASE, "outputs", "font.ttf")
 font = font_path  # Can also use font name if installed
 
+def generate_thumbnail(video_path, thumbnail_path, timestamp=1.0):
+    """
+    Generate a thumbnail from the video at a specific timestamp
+    
+    Args:
+        video_path: Path to the video file
+        thumbnail_path: Path where thumbnail should be saved
+        timestamp: Time in seconds to capture thumbnail (default: 1 second)
+    """
+    try:
+        from moviepy.editor import VideoFileClip
+        
+        # Load video and extract frame at timestamp
+        with VideoFileClip(str(video_path)) as video:
+            # Ensure timestamp doesn't exceed video duration
+            capture_time = min(timestamp, video.duration - 0.1)
+            
+            # Extract frame and save as image
+            frame = video.get_frame(capture_time)
+            
+            # Convert to PIL Image and save
+            from PIL import Image
+            img = Image.fromarray(frame)
+            img.save(thumbnail_path, 'JPEG', quality=85)
+            
+        return True
+    except Exception as e:
+        print(f"Error generating thumbnail: {e}")
+        return False
+
 def zoom_in_image(t):
     return 1.5 + (0.1 * t)
 
@@ -154,6 +184,20 @@ def video_main(progress_callback=None, prompt: str = "Generated Video", voice: s
     # Render video with unique filename
     final_clip.write_videofile(str(video_path), fps=30, audio=True)
     
+    # Generate thumbnail
+    thumbnail_filename = f"{video_id}_thumbnail.jpg"
+    thumbnail_path = file_manager.get_thumbnail_path(thumbnail_filename)
+    
+    if progress_callback:
+        progress_callback("Generating video thumbnail...", 99)
+    
+    thumbnail_success = generate_thumbnail(video_path, thumbnail_path, timestamp=1.0)
+    if thumbnail_success:
+        print(f"Thumbnail generated: {thumbnail_path}")
+    else:
+        print("Warning: Could not generate thumbnail")
+        thumbnail_path = None
+    
     # Get file size
     file_size = video_path.stat().st_size if video_path.exists() else 0
     
@@ -166,7 +210,8 @@ def video_main(progress_callback=None, prompt: str = "Generated Video", voice: s
         duration=total_duration,
         file_size=file_size,
         created_at=datetime.now().isoformat(),
-        file_path=str(video_path)
+        file_path=str(video_path),
+        thumbnail_path=str(thumbnail_path) if thumbnail_path else None
     )
     
     # Save metadata
@@ -182,20 +227,12 @@ def video_main(progress_callback=None, prompt: str = "Generated Video", voice: s
     print(f"Video ID: {video_id}")
     print(f"File size: {file_size / (1024*1024):.2f} MB")
     
-    # Also create the legacy file for backward compatibility
-    legacy_path = "./outputs/youtube_short.mp4"
-    try:
-        import shutil
-        shutil.copy2(str(video_path), legacy_path)
-        print(f"Legacy copy created: {legacy_path}")
-    except Exception as e:
-        print(f"Warning: Could not create legacy copy: {e}")
-    
     return {
         "success": True,
         "video_id": video_id,
         "filename": filename,
         "file_path": str(video_path),
+        "thumbnail_path": str(thumbnail_path) if thumbnail_path else None,
         "file_size": file_size,
         "file_size_mb": round(file_size / (1024 * 1024), 2),
         "duration": total_duration,

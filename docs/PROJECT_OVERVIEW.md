@@ -4,7 +4,7 @@
 
 Vidzyme is a comprehensive AI-powered video creation SaaS platform that automates the entire video production pipeline from script generation to publishing. The platform combines a FastAPI backend with a modern React frontend to provide users with an intuitive interface for creating professional video content at scale.
 
-The platform features a complete SaaS architecture with user authentication, subscription management, onboarding flows, scheduled video generation, queue management, and multi-channel support for content creators and businesses.
+The platform features a complete SaaS architecture with user authentication, subscription management, onboarding flows, scheduled video generation, queue management, automatic thumbnail generation, and multi-channel support for content creators and businesses.
 
 ## 🏗️ Architecture Overview
 
@@ -15,11 +15,12 @@ The platform features a complete SaaS architecture with user authentication, sub
 │   (React)       │◄──►│   (FastAPI)     │◄──►│   (Supabase)    │◄──►│                 │
 │                 │    │                 │    │                 │    │ • Google Gemini │
 │ • Landing Page  │    │ • Video Pipeline│    │ • User Auth     │    │ • ElevenLabs    │
-│ • Dashboard     │    │ • SSE Streaming │    │ • Subscriptions │    │ • Pollinations  │
-│ • Onboarding    │    │ • Queue Manager │    │ • Video History │    │ • Veo 3 API     │
-│ • Subscriptions │    │ • Scheduler     │    │ • Channels      │    │                 │
+│ • Dashboard     │    │ • SSE Streaming │    │ • Subscriptions │    │ • Gemini TTS    │
+│ • Onboarding    │    │ • Queue Manager │    │ • Video History │    │ • Pollinations  │
+│ • Subscriptions │    │ • Scheduler     │    │ • Channels      │    │ • Veo 3 API     │
 │ • Video Gen     │    │ • File Manager  │    │ • Queue Data    │    │                 │
-│ • Settings      │    │ • Health Check  │    │                 │    │                 │
+│ • Settings      │    │ • Health Check  │    │ • Thumbnails    │    │                 │
+│ • Thumbnails    │    │ • Thumbnails    │    │                 │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -29,12 +30,12 @@ The platform features a complete SaaS architecture with user authentication, sub
 - **Framework**: FastAPI (Python)
 - **Video Processing**: MoviePy, FFmpeg, ImageMagick
 - **Real-time Communication**: Server-Sent Events (SSE), WebSocket
-- **AI Integration**: Google Gemini API, ElevenLabs TTS, Veo 3 API
+- **AI Integration**: Google Gemini API, ElevenLabs TTS, Gemini TTS, Veo 3 API
 - **Image Generation**: Pollinations AI API
 - **Translation**: Google Translate
 - **Queue Management**: Custom queue system with persistence
 - **Scheduling**: APScheduler for automated video generation
-- **File Management**: Advanced file handling and cleanup
+- **File Management**: Advanced file handling, cleanup, and thumbnail generation
 
 #### Frontend
 - **Framework**: React 18 with TypeScript
@@ -43,24 +44,26 @@ The platform features a complete SaaS architecture with user authentication, sub
 - **Icons**: Lucide React, Heroicons
 - **State Management**: React Hooks, Context API
 - **Animations**: Custom CSS animations
-- **UI Components**: Custom modal system, enhanced video player
+- **UI Components**: Custom modal system, enhanced video player with thumbnails
 
 #### Database & Authentication
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
 - **Real-time**: Supabase Realtime subscriptions
-- **Storage**: Supabase Storage for video files
+- **Storage**: Supabase Storage for video files and thumbnails
+- **Optimization**: Custom indexes and migration scripts
 
 #### External Services
 - **Google Gemini**: Script generation and content creation
 - **ElevenLabs**: High-quality text-to-speech conversion
+- **Gemini TTS**: Integrated Google text-to-speech
 - **Pollinations AI**: AI-powered image generation
 - **Veo 3 API**: Advanced video generation capabilities
 - **Google Translate**: Multi-language support
 
 ## 🎬 Video Generation Pipeline
 
-The platform follows a sophisticated 12-step pipeline:
+The platform follows a sophisticated 13-step pipeline:
 
 1. **Topic Input**: User provides video topic/prompt
 2. **Title Generation**: AI generates multiple title options
@@ -70,10 +73,11 @@ The platform follows a sophisticated 12-step pipeline:
 6. **Voice Synthesis**: Text-to-speech for each segment
 7. **Video Assembly**: Combines images, audio, and text
 8. **Post-processing**: Applies effects and transitions
-9. **Quality Check**: Validates output quality
-10. **Format Optimization**: Optimizes for target platform
-11. **File Generation**: Creates final video file
-12. **Delivery**: Makes video available for download
+9. **Thumbnail Generation**: Extracts and optimizes video thumbnail
+10. **Quality Check**: Validates output quality
+11. **Format Optimization**: Optimizes for target platform
+12. **File Generation**: Creates final video file and thumbnail
+13. **Delivery**: Makes video and thumbnail available for download
 
 ## 🌟 Key Features
 

@@ -9,8 +9,10 @@ interface VideoGenerationRequest {
 interface VideoGenerationResponse {
   success: boolean;
   video_id?: string;
+  task_id?: string;
   video_path?: string;
   message?: string;
+  status?: string;
 }
 
 interface ProgressUpdate {
@@ -90,7 +92,7 @@ class VidzemeAPIClient {
 
   async checkHealth(): Promise<boolean> {
     try {
-      const url = this.getURL('/');
+      const url = this.getURL('/health');
       const response = await fetch(url);
       return response.ok;
     } catch {

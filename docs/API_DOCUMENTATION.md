@@ -130,6 +130,7 @@ GET /video/{video_id}
   "duration": 45,
   "file_path": "/outputs/youtube_short.mp4",
   "download_url": "/static/outputs/youtube_short.mp4",
+  "thumbnail_url": "/static/outputs/thumbnails/youtube_short_thumbnail.jpg",
   "created_at": "2024-01-15T10:30:00Z"
 }
 ```

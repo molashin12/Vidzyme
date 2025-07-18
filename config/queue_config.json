@@ -1,0 +1,37 @@
+{
+  "queue_manager": {
+    "max_workers": 3,
+    "max_retries": 3,
+    "retry_delay": 5,
+    "task_timeout": 1800,
+    "cleanup_interval": 300
+  },
+  "rate_limits": {
+    "gemini": {
+      "requests_per_minute": 60,
+      "requests_per_hour": 1500
+    },
+    "elevenlabs": {
+      "requests_per_minute": 20,
+      "requests_per_hour": 500
+    },
+    "veo3": {
+      "requests_per_minute": 10,
+      "requests_per_hour": 100
+    }
+  },
+  "concurrency_limits": {
+    "video_generation": 3,
+    "voice_generation": 2,
+    "image_generation": 4
+  },
+  "monitoring": {
+    "enable_metrics": true,
+    "log_level": "INFO",
+    "alert_thresholds": {
+      "queue_size": 50,
+      "failed_task_rate": 0.1,
+      "average_processing_time": 600
+    }
+  }
+}

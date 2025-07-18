@@ -326,11 +326,13 @@ class PlatformContentRequest(BaseModel):
 
 
 import time
+import uuid
 from utils.gemini import query
 from utils.write_script import write_content, split_text_to_lines
 from utils.image_gen import image_main
 from utils.voice_gen import voice_main
 from utils.video_creation import video_main
+from utils.queue_manager import queue_manager, QueueManager, QueueTask, TaskPriority, TaskStatus
 
 # Import scheduling system
 from scheduler import video_scheduler
@@ -390,15 +392,20 @@ VOICE_MAPPING = {
     "emma": "qi4PkV9c01kb869Vh7Su"
 }
 
+# Initialize queue manager
+queue_manager = QueueManager(max_workers=3)
+
 # Initialize scheduler on startup
 @app.on_event("startup")
 async def startup_event():
     await video_scheduler.initialize()
     await video_scheduler.start()
+    queue_manager.start()
 
 @app.on_event("shutdown")
 async def shutdown_event():
     await video_scheduler.stop()
+    queue_manager.stop()
 
 
 # SSE connection queue for real-time updates
@@ -424,6 +431,11 @@ def stream():
                 listeners.remove(q)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+@app.get("/api/stream")
+def api_stream():
+    """API version of the streaming endpoint for real-time progress updates"""
+    return stream()
 
 
 def broadcast(message: str):
@@ -465,30 +477,56 @@ async def get_form(request: Request):
 async def health_check():
     return {"status": "healthy", "message": "Backend is running"}
 
+@app.get("/api/health")
+async def api_health_check():
+    return {"status": "healthy", "message": "Backend is running"}
+
 
 @app.get("/video-preview")
 async def get_video_preview():
     """Check if generated video exists and return preview information"""
-    video_path = os.path.join(BASE, "outputs", "youtube_short.mp4")
-    
-    if os.path.exists(video_path):
-        # Get file size and creation time
-        file_stats = os.stat(video_path)
-        file_size = file_stats.st_size
-        creation_time = datetime.fromtimestamp(file_stats.st_mtime)
+    try:
+        from utils.file_manager import get_file_manager
+        file_manager = get_file_manager()
+        videos = file_manager.list_videos(limit=1)  # Get the latest video
         
-        return {
-            "exists": True,
-            "video_url": "/outputs/youtube_short.mp4",
-            "file_size": file_size,
-            "created_at": creation_time.isoformat(),
-            "file_size_mb": round(file_size / (1024 * 1024), 2)
-        }
-    else:
+        if videos:
+            latest_video = videos[0]
+            video_path = os.path.join(BASE, latest_video.file_path)
+            
+            if os.path.exists(video_path):
+                # Generate thumbnail URL if thumbnail exists
+                thumbnail_url = None
+                if latest_video.thumbnail_path:
+                    thumbnail_filename = os.path.basename(latest_video.thumbnail_path)
+                    thumbnail_url = f"/outputs/thumbnails/{thumbnail_filename}"
+                
+                return {
+                    "exists": True,
+                    "video_url": f"/outputs/videos/{latest_video.filename}",
+                    "thumbnail_url": thumbnail_url,
+                    "file_size": latest_video.file_size,
+                    "created_at": latest_video.created_at,
+                    "file_size_mb": round(latest_video.file_size / (1024 * 1024), 2),
+                    "video_id": latest_video.video_id,
+                    "title": latest_video.original_prompt,
+                    "duration": latest_video.duration
+                }
+        
         return {
             "exists": False,
             "message": "No video has been generated yet"
         }
+    except Exception as e:
+        return {
+            "exists": False,
+            "message": f"Error retrieving video: {str(e)}"
+        }
+
+@app.get("/api/video-preview")
+async def get_video_preview_api():
+    """Check if generated video exists and return preview information (API version)"""
+    return await get_video_preview()
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -618,14 +656,26 @@ async def generate_shorts(
         raise HTTPException(status_code=400, detail="invalid voice_name")
 
     voice_id = VOICE_MAPPING[voice_name]
-    threading.Thread(
-        target=run_pipeline,
-        args=(topic, voice_id),
-        daemon=True
-    ).start()
-
-    broadcast(f"▶️ Starting video creation for topic: '{topic}' with voice '{voice_name}'.")
-    return {"status": "started"}
+    
+    # Create task for queue
+    task_id = str(uuid.uuid4())
+    task = QueueTask(
+        id=task_id,
+        task_type="video_generation",
+        priority=TaskPriority.NORMAL,
+        data={
+            "topic": topic,
+            "voice_id": voice_id,
+            "voice_name": voice_name,
+            "video_record": None
+        }
+    )
+    
+    # Add to queue
+    queue_manager.add_task(task)
+    
+    broadcast(f"▶️ Video queued for generation: '{topic}' with voice '{voice_name}'. Task ID: {task_id}")
+    return {"status": "queued", "task_id": task_id}
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -644,7 +694,7 @@ async def generate_shorts_post(request: VideoGenerationRequest):
 
     voice_id = VOICE_MAPPING[voice_name]
     
-    # Create video record in database with 'processing' status
+    # Create video record in database with 'queued' status
     video_record = None
     if user_id:
         try:
@@ -653,7 +703,7 @@ async def generate_shorts_post(request: VideoGenerationRequest):
                 "title": topic[:100],  # Truncate if too long
                 "prompt": topic,
                 "voice": voice_name,
-                "status": "processing",
+                "status": "queued",
                 "processing_progress": 0,
                 "created_at": "now()",
                 "updated_at": "now()"
@@ -665,17 +715,54 @@ async def generate_shorts_post(request: VideoGenerationRequest):
         except Exception as e:
             print(f"Error creating video record: {e}")
     
-    threading.Thread(
-        target=run_pipeline,
-        args=(topic, voice_id, video_record),
-        daemon=True
-    ).start()
+    # Create task for queue
+    task_id = str(uuid.uuid4())
+    task = QueueTask(
+        id=task_id,
+        task_type="video_generation",
+        priority=TaskPriority.NORMAL,
+        payload={
+            "topic": topic,
+            "voice_id": voice_id,
+            "voice_name": voice_name,
+            "video_record": video_record
+        }
+    )
+    
+    # Add to queue
+    queue_manager.add_task(task)
+    
+    # Register progress callback to connect queue manager to broadcast system
+    def progress_callback(stage: str, progress: int, message: str, details: str = ""):
+        broadcast_progress(stage, progress, message, details)
+        # Also update video record if available
+        if video_record:
+            try:
+                update_data = {
+                    "processing_progress": progress,
+                    "updated_at": "now()"
+                }
+                if progress == 100:
+                    update_data["status"] = "completed"
+                elif progress > 0:
+                    update_data["status"] = "processing"
+                
+                supabase.table("videos").update(update_data).eq("id", video_record["id"]).execute()
+            except Exception as e:
+                print(f"Error updating video progress: {e}")
+    
+    queue_manager.register_progress_callback(task_id, progress_callback)
 
-    broadcast(f"▶️ Starting video creation for topic: '{topic}' with voice '{voice_name}'.")
-    response_data = {"status": "started", "message": "Video generation started"}
+    broadcast(f"▶️ Video queued for generation: '{topic}' with voice '{voice_name}'. Task ID: {task_id}")
+    response_data = {"status": "queued", "message": "Video generation queued", "task_id": task_id}
     if video_record:
         response_data["video_id"] = video_record["id"]
     return response_data
+
+@app.post("/api/generate")
+async def api_generate_shorts_post(request: VideoGenerationRequest):
+    """API endpoint for video generation - matches frontend expectations"""
+    return await generate_shorts_post(request)
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -794,9 +881,16 @@ def run_pipeline(topic: str, voice_id: str, video_record=None):
         
         # Check if video was created successfully and broadcast completion with preview info
         if video_info and video_info.get("success"):
+            # Generate thumbnail URL if available
+            thumbnail_url = None
+            if video_info.get('thumbnail_path'):
+                thumbnail_filename = os.path.basename(video_info['thumbnail_path'])
+                thumbnail_url = f"/outputs/thumbnails/{thumbnail_filename}"
+            
             completion_message = {
                 "message": "✅ Video generation completed!",
-                "video_url": f"/outputs/{video_info['filename']}",
+                "video_url": f"/outputs/videos/{video_info['filename']}",
+                "thumbnail_url": thumbnail_url,
                 "file_size_mb": video_info['file_size_mb'],
                 "preview_available": True,
                 "video_id": video_info['video_id'],
@@ -811,11 +905,15 @@ def run_pipeline(topic: str, voice_id: str, video_record=None):
                     update_data = {
                         "status": "completed",
                         "processing_progress": 100,
-                        "video_url": f"/outputs/{video_info['filename']}",
+                        "video_url": f"/outputs/videos/{video_info['filename']}",
                         "file_size": video_info.get('file_size', 0),
                         "duration": video_info.get('duration', 0),
                         "updated_at": "now()"
                     }
+                    # Add thumbnail URL if available
+                    if thumbnail_url:
+                        update_data["thumbnail_url"] = thumbnail_url
+                    
                     supabase.table("videos").update(update_data).eq("id", video_record["id"]).execute()
                     print(f"Updated video record {video_record['id']} with completion data")
                 except Exception as e:
@@ -830,43 +928,66 @@ def run_pipeline(topic: str, voice_id: str, video_record=None):
                 "timestamp": time.time()
             }))
         else:
-            # Fallback to legacy path check
-            video_path = os.path.join(BASE, "outputs", "youtube_short.mp4")
-            if os.path.exists(video_path):
-                file_stats = os.stat(video_path)
-                file_size_mb = round(file_stats.st_size / (1024 * 1024), 2)
-                file_size_bytes = file_stats.st_size
-                completion_message = {
-                    "message": "✅ Video generation completed!",
-                    "video_url": "/outputs/youtube_short.mp4",
-                    "file_size_mb": file_size_mb,
-                    "preview_available": True
-                }
-                broadcast_progress("completed", 100, "✅ Video generation completed!", f"Video ready for preview ({file_size_mb} MB)")
+            # Fallback to check latest generated video
+            try:
+                from utils.file_manager import get_file_manager
+                file_manager = get_file_manager()
+                videos = file_manager.list_videos(limit=1)
                 
-                # Update video record with legacy completion data
-                if video_record:
-                    try:
-                        update_data = {
-                            "status": "completed",
-                            "processing_progress": 100,
-                            "video_url": "/outputs/youtube_short.mp4",
-                            "file_size": file_size_bytes,
-                            "updated_at": "now()"
+                if videos:
+                    latest_video = videos[0]
+                    video_path = os.path.join(BASE, latest_video.file_path)
+                    
+                    if os.path.exists(video_path):
+                        # Generate thumbnail URL if available
+                        thumbnail_url = None
+                        if latest_video.thumbnail_path:
+                            thumbnail_filename = os.path.basename(latest_video.thumbnail_path)
+                            thumbnail_url = f"/outputs/thumbnails/{thumbnail_filename}"
+                        
+                        completion_message = {
+                            "message": "✅ Video generation completed!",
+                            "video_url": f"/outputs/videos/{latest_video.filename}",
+                            "thumbnail_url": thumbnail_url,
+                            "file_size_mb": round(latest_video.file_size / (1024 * 1024), 2),
+                            "preview_available": True
                         }
-                        supabase.table("videos").update(update_data).eq("id", video_record["id"]).execute()
-                        print(f"Updated video record {video_record['id']} with legacy completion data")
-                    except Exception as e:
-                        print(f"Error updating video completion: {e}")
-                
-                import json
-                broadcast(json.dumps({
-                    "step": "video_ready",
-                    "progress": 100,
-                    "video_data": completion_message,
-                    "timestamp": time.time()
-                }))
-            else:
+                        broadcast_progress("completed", 100, "✅ Video generation completed!", f"Video ready for preview ({round(latest_video.file_size / (1024 * 1024), 2)} MB)")
+                        
+                        # Update video record with completion data
+                        if video_record:
+                            try:
+                                update_data = {
+                                    "status": "completed",
+                                    "processing_progress": 100,
+                                    "video_url": f"/outputs/videos/{latest_video.filename}",
+                                    "file_size": latest_video.file_size,
+                                    "updated_at": "now()"
+                                }
+                                # Add thumbnail URL if available
+                                if thumbnail_url:
+                                    update_data["thumbnail_url"] = thumbnail_url
+                                
+                                supabase.table("videos").update(update_data).eq("id", video_record["id"]).execute()
+                                print(f"Updated video record {video_record['id']} with completion data")
+                            except Exception as e:
+                                print(f"Error updating video completion: {e}")
+                        
+                        import json
+                        broadcast(json.dumps({
+                            "step": "video_ready",
+                            "progress": 100,
+                            "video_data": completion_message,
+                            "timestamp": time.time()
+                        }))
+                    else:
+                        broadcast_progress("completed", 100, "✅ Video generation completed!", "Video generation finished")
+                        update_video_progress(100, "completed")
+                else:
+                    broadcast_progress("completed", 100, "✅ Video generation completed!", "Video generation finished")
+                    update_video_progress(100, "completed")
+            except Exception as e:
+                print(f"Error in fallback video check: {e}")
                 broadcast_progress("completed", 100, "✅ Video generation completed!", "Video generation finished")
                 update_video_progress(100, "completed")
 
@@ -1015,6 +1136,169 @@ Only include platforms that were requested. Make sure the content is optimized f
     except Exception as e:
         print(f"Error generating platform content: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate platform content: {str(e)}")
+
+
+# ───────────────────────────────────────────────────────────────────────────────
+# QUEUE MANAGEMENT API ENDPOINTS
+# ───────────────────────────────────────────────────────────────────────────────
+
+@app.get("/api/queue/status")
+async def get_queue_status():
+    """Get current queue status and statistics"""
+    try:
+        status = queue_manager.get_queue_status()
+        return {
+            "success": True,
+            "data": {
+                "queue_size": status["pending_tasks"],
+                "active_tasks": status["processing_tasks"],
+                "completed_tasks": status["stats"].get("completed_tasks", 0),
+                "failed_tasks": status["stats"].get("failed_tasks", 0),
+                "total_processed": status["stats"].get("total_tasks", 0),
+                "average_processing_time": status["stats"].get("average_processing_time", 0),
+                "is_running": queue_manager.running
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting queue status: {str(e)}")
+
+@app.get("/api/queue/tasks")
+async def get_queue_tasks():
+    """Get all tasks in the queue with their current status"""
+    try:
+        tasks = []
+        for task in queue_manager.tasks.values():
+            tasks.append({
+                "id": task.id,
+                "task_type": task.task_type,
+                "status": task.status.value,
+                "priority": task.priority.value,
+                "created_at": task.created_at.isoformat(),
+                "started_at": task.started_at.isoformat() if task.started_at else None,
+                "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+                "error_message": task.error_message,
+                "retry_count": task.retry_count,
+                "data": {
+                    "topic": task.payload.get("topic"),
+                    "voice_name": task.payload.get("voice_name")
+                }
+            })
+        
+        return {"success": True, "data": tasks}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting queue tasks: {str(e)}")
+
+@app.get("/api/queue/tasks/{task_id}")
+async def get_task_status(task_id: str):
+    """Get status of a specific task"""
+    try:
+        task = queue_manager.tasks.get(task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        return {
+            "success": True,
+            "data": {
+                "id": task.id,
+                "task_type": task.task_type,
+                "status": task.status.value,
+                "priority": task.priority.value,
+                "created_at": task.created_at.isoformat(),
+                "started_at": task.started_at.isoformat() if task.started_at else None,
+                "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+                "error_message": task.error_message,
+                "retry_count": task.retry_count,
+                "progress": task.progress,
+                "payload": task.payload
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting task status: {str(e)}")
+
+@app.delete("/api/queue/tasks/{task_id}")
+async def cancel_task(task_id: str):
+    """Cancel a queued task (only works for pending tasks)"""
+    try:
+        task = queue_manager.tasks.get(task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        if task.status == TaskStatus.PROCESSING:
+            raise HTTPException(status_code=400, detail="Cannot cancel task that is currently processing")
+        
+        if task.status in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
+            raise HTTPException(status_code=400, detail="Cannot cancel completed or failed task")
+        
+        # Remove from queue
+        if task_id in queue_manager.tasks:
+            del queue_manager.tasks[task_id]
+            
+        # Update video record if exists
+        if task.payload.get("video_record"):
+            try:
+                video_record = task.payload["video_record"]
+                supabase.table("videos").update({
+                    "status": "cancelled",
+                    "updated_at": "now()"
+                }).eq("id", video_record["id"]).execute()
+            except Exception as e:
+                print(f"Error updating video record for cancelled task: {e}")
+        
+        return {"success": True, "message": "Task cancelled successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error cancelling task: {str(e)}")
+
+@app.post("/api/queue/retry/{task_id}")
+async def retry_failed_task(task_id: str):
+    """Retry a failed task"""
+    try:
+        task = queue_manager.tasks.get(task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        if task.status != TaskStatus.FAILED:
+            raise HTTPException(status_code=400, detail="Can only retry failed tasks")
+        
+        # Reset task status and re-queue
+        task.status = TaskStatus.PENDING
+        task.error_message = None
+        task.started_at = None
+        task.completed_at = None
+        
+        # Add back to queue
+        queue_manager.add_task(task)
+        
+        return {"success": True, "message": "Task queued for retry"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrying task: {str(e)}")
+
+@app.post("/api/queue/clear")
+async def clear_queue():
+    """Clear all pending tasks from the queue (does not affect processing tasks)"""
+    try:
+        cleared_count = 0
+        tasks_to_remove = []
+        
+        for task_id, task in queue_manager.tasks.items():
+            if task.status == TaskStatus.PENDING:
+                tasks_to_remove.append(task_id)
+                cleared_count += 1
+        
+        for task_id in tasks_to_remove:
+            del queue_manager.tasks[task_id]
+        
+        return {
+            "success": True, 
+            "message": f"Cleared {cleared_count} pending tasks from queue"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error clearing queue: {str(e)}")
 
 
 # ───────────────────────────────────────────────────────────────────────────────

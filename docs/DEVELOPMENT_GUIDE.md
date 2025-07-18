@@ -58,6 +58,7 @@ Vidzyme/
 │       ├── voice_gen.py      # Voice synthesis
 │       ├── video_creation.py # Video assembly
 │       ├── veo3_integration.py # Veo 3 API integration
+│       ├── thumbnail_backfill.py # Thumbnail generation utility
 │       └── supabase_client.py  # Supabase integration
 ├── 📁 veo3/                  # Veo 3 API integration
 │   ├── client.py             # Veo 3 client
@@ -71,7 +72,8 @@ Vidzyme/
 ├── 📁 outputs/               # Generated content
 │   ├── images/               # Generated images
 │   ├── audio/                # Generated audio
-│   └── videos/               # Generated videos
+│   ├── videos/               # Generated videos
+│   └── thumbnails/           # Generated thumbnails
 ├── 📁 logs/                  # Application logs
 ├── 📁 test_output/           # Test outputs
 ├── 📁 docs/                  # Documentation

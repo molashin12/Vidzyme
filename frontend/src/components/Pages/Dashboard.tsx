@@ -9,7 +9,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ onNavigate }: DashboardProps) {
-  const { stats, usage, videos, isLoading, profile } = useUser();
+  const { stats, usage, videos, isLoading, profile, refreshUsage } = useUser();
   const { isGenerating, progress, retryInfo, retryGeneration, currentVideoId } = useVideoGeneration(profile?.id);
   
   // Format stats for display
@@ -140,7 +140,19 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         {/* Usage Overview */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-2 bg-gray-800/50 rounded-xl p-6 border border-gray-700 animate-slideInLeft">
-            <h3 className="text-xl font-semibold mb-4 animate-slideInUp">Usage This Month</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold animate-slideInUp">Usage This Month</h3>
+              <button
+                onClick={refreshUsage}
+                className="text-[#27AE60] hover:text-[#229954] transition-colors text-sm flex items-center gap-1 hover-glow"
+                title="Refresh usage data"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </button>
+            </div>
             
             <div className="space-y-6">
               <div>

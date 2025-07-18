@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User as SupabaseUser } from '@supabase/supabase-js';
 import { useAuth } from '../hooks/useAuth';
 import { DatabaseService } from '../services/database';
 
@@ -76,6 +75,7 @@ interface UserContextType {
   updateConnectedAccount: (platform: keyof ConnectedAccounts, data: ConnectedAccount) => Promise<void>;
   updateConnectedAccounts: (accounts: ConnectedAccounts) => Promise<void>;
   addVideo: (video: Video) => void;
+  refreshUsage: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -203,20 +203,53 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           console.warn('Could not load user videos:', videosError);
         }
 
-        // Load user usage data
+        // Load user usage data - calculate from videos created this month
         try {
-          const usageResponse = await DatabaseService.getUserUsage(authUser.id);
-          if (usageResponse.success && usageResponse.data) {
-            setUsage({
-              current: usageResponse.data.length, // Number of videos generated
-              limit: authUser.subscription_plan === 'pro' ? 100 : 10,
-              voiceMinutes: 0, // Would need to calculate from videos
-              voiceLimit: authUser.subscription_plan === 'pro' ? 120 : 30,
-              plan: authUser.subscription_plan || 'free'
+          const now = new Date();
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+          const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+          
+          // Get videos created this month
+          const monthlyVideosResponse = await DatabaseService.getUserVideos(authUser.id, 100, 0);
+          let videosThisMonth = 0;
+          let voiceMinutesThisMonth = 0;
+          
+          if (monthlyVideosResponse.success && monthlyVideosResponse.data) {
+            // Filter videos created this month
+            const thisMonthVideos = monthlyVideosResponse.data.filter(video => {
+              const videoDate = new Date(video.created_at);
+              return videoDate >= new Date(startOfMonth) && videoDate <= new Date(endOfMonth);
             });
+            
+            videosThisMonth = thisMonthVideos.length;
+            
+            // Calculate voice minutes from video durations
+            voiceMinutesThisMonth = thisMonthVideos.reduce((total, video) => {
+              return total + Math.ceil((video.duration || 0) / 60); // Convert seconds to minutes, round up
+            }, 0);
           }
+          
+          setUsage({
+            current: videosThisMonth,
+            limit: authUser.subscription_plan === 'enterprise' ? 100 : 
+                   authUser.subscription_plan === 'pro' ? 50 : 10,
+            voiceMinutes: voiceMinutesThisMonth,
+            voiceLimit: authUser.subscription_plan === 'enterprise' ? 120 : 
+                       authUser.subscription_plan === 'pro' ? 60 : 30,
+            plan: authUser.subscription_plan || 'free'
+          });
         } catch (usageError) {
           console.warn('Could not load usage data:', usageError);
+          // Set default values if calculation fails
+          setUsage({
+            current: 0,
+            limit: authUser.subscription_plan === 'enterprise' ? 100 : 
+                   authUser.subscription_plan === 'pro' ? 50 : 10,
+            voiceMinutes: 0,
+            voiceLimit: authUser.subscription_plan === 'enterprise' ? 120 : 
+                       authUser.subscription_plan === 'pro' ? 60 : 30,
+            plan: authUser.subscription_plan || 'free'
+          });
         }
 
         // Load user stats
@@ -285,6 +318,44 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       loadUserData();
     }
   }, [authUser, authLoading]);
+
+  const refreshUsage = async () => {
+    if (!authUser) return;
+    
+    try {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+      
+      // Get videos created this month
+      const monthlyVideosResponse = await DatabaseService.getUserVideos(authUser.id, 100, 0);
+      let videosThisMonth = 0;
+      let voiceMinutesThisMonth = 0;
+      
+      if (monthlyVideosResponse.success && monthlyVideosResponse.data) {
+        // Filter videos created this month
+        const thisMonthVideos = monthlyVideosResponse.data.filter(video => {
+          const videoDate = new Date(video.created_at);
+          return videoDate >= new Date(startOfMonth) && videoDate <= new Date(endOfMonth);
+        });
+        
+        videosThisMonth = thisMonthVideos.length;
+        
+        // Calculate voice minutes from video durations
+        voiceMinutesThisMonth = thisMonthVideos.reduce((total, video) => {
+          return total + Math.ceil((video.duration || 0) / 60); // Convert seconds to minutes, round up
+        }, 0);
+      }
+      
+      setUsage(prev => ({
+        ...prev,
+        current: videosThisMonth,
+        voiceMinutes: voiceMinutesThisMonth
+      }));
+    } catch (error) {
+      console.error('Error refreshing usage data:', error);
+    }
+  };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!authUser) return;
@@ -423,10 +494,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       ...prev,
       videosCreated: prev.videosCreated + 1
     }));
-    setUsage(prev => ({
-      ...prev,
-      current: prev.current + 1
-    }));
+    // Refresh usage to get accurate count based on actual videos
+    refreshUsage();
   };
 
   const value: UserContextType = {
@@ -441,6 +510,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     updateConnectedAccount,
     updateConnectedAccounts,
     addVideo,
+    refreshUsage,
     isLoading
   };
 

@@ -101,8 +101,8 @@ class VideoQueue:
 - **Parameters**:
   - `topic` (required): Video topic/subject
   - `voice_name` (required): Selected voice option
-- **Process**: Initiates async video generation pipeline
-- **Returns**: JSON with video_id and status
+- **Process**: Initiates async video generation pipeline with thumbnail creation
+- **Returns**: JSON with video_id, status, and thumbnail_url
 
 #### Progress Tracking (`/progress/{video_id}`)
 - **Method**: GET

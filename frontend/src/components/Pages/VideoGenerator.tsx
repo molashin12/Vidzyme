@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Lightbulb, Settings, Calendar, ChevronLeft, ChevronRight, Download, Globe, Wand2, Upload, Clock, FileText, Sparkles, Bot, User, Building2, Target, Palette, Monitor, Smartphone, Square, Film, ImageIcon, VideoIcon, UserIcon, Type } from 'lucide-react';
+import { Lightbulb, Settings, Calendar, ChevronLeft, ChevronRight, Download, Globe, Wand2, Upload, Clock, FileText, Sparkles, Bot, User, Building2, Target, Palette, Monitor, Smartphone, Square, Film, ImageIcon, VideoIcon, UserIcon, Type, Activity } from 'lucide-react';
 import VideoCreationFlow from '../Animations/VideoCreationFlow';
 import VideoPlayerProgressIndicator from '../Animations/VideoPlayerProgressIndicator';
+import QueueManager from '../QueueManager';
 import { useVideoGeneration } from '../../hooks/useVideoGeneration';
 import { useUser } from '../../contexts/UserContext';
 import { DatabaseService } from '../../services/database';
@@ -67,6 +68,7 @@ export default function VideoGenerator({ onNavigate }: VideoGeneratorProps) {
   const { addVideo, profile, connectedAccounts } = useUser();
   const { isGenerating, progress, error, videoUrl, currentVideoId, generateVideo, resetState, retryInfo, retryGeneration, checkForOngoingGeneration } = useVideoGeneration(profile.id);
   const [videoSaved, setVideoSaved] = useState(false);
+  const [showQueueManager, setShowQueueManager] = useState(false);
 
   // Load user channel data for AI idea generation
   useEffect(() => {
@@ -548,8 +550,21 @@ Follow for more ${keywords[0]} tips 🔥`;
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2 animate-slideInUp">Create Your Video</h1>
-          <p className="text-gray-400 animate-slideInUp stagger-1">AI-powered video generation made simple</p>
+          <div className="flex items-center justify-between mb-4">
+            <div></div> {/* Spacer */}
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold mb-2 animate-slideInUp">Create Your Video</h1>
+              <p className="text-gray-400 animate-slideInUp stagger-1">AI-powered video generation made simple</p>
+            </div>
+            <button
+              onClick={() => setShowQueueManager(true)}
+              className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+              title="View Queue Status"
+            >
+              <Activity className="w-4 h-4" />
+              <span>Queue</span>
+            </button>
+          </div>
           <div className="mt-6">
             <VideoCreationFlow size="medium" />
           </div>
@@ -1336,6 +1351,12 @@ Follow for more ${keywords[0]} tips 🔥`;
           </button>
         </div>
       </div>
+
+      {/* Queue Manager Modal */}
+      <QueueManager 
+        isOpen={showQueueManager} 
+        onClose={() => setShowQueueManager(false)} 
+      />
     </div>
   );
 }
